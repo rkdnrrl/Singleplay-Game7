@@ -104,6 +104,21 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 }
 .equip-card:hover  { border-color: var(--accent); background: #12122a; }
 .equip-card:active { background: #1a1a33; }
+.equip-card.equip-selected { border-color: var(--gold); background: #1a1500; }
+
+.equip-check {
+  font-size: 1.1rem;
+  color: var(--gold);
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.equip-card.equip-selected .equip-check { opacity: 1; }
+
+#btn-enter:disabled { opacity: 0.35; cursor: default; }
+
+.item-btn.equip-active  { border-color: var(--gold); border-width: 2px; }
+.item-btn.equip-inactive { opacity: 0.55; }
 
 .equip-thumb {
   width: 52px; height: 52px;
