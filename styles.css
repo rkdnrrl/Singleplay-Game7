@@ -439,6 +439,22 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 .equip-list::-webkit-scrollbar-track { background: transparent; }
 .equip-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+/* ── PC / 넓은 화면 ─────────────────────────────────────── */
+@media (min-width: 768px) {
+  #screen-game {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* D-패드 숨기고 키보드 힌트만 표시 */
+  .dpad { display: none; }
+  .key-hint { display: block; }
+
+  /* 아이템 슬롯이 바텀 HUD 전체 사용 */
+  .hud-bottom { justify-content: flex-start; }
+  .item-slots { flex-wrap: wrap; max-height: 120px; }
+}
+
 /* ── 소형 화면 (높이 680px 이하) ───────────────────────── */
 @media (max-height: 680px) {
   .hud-top { min-height: 44px; padding: 0.25rem 0.7rem; }
