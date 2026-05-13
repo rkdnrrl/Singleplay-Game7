@@ -15,9 +15,9 @@
 
   // 스태미나 상수
   const STA_MAX      = 100;
-  const STA_ATK_COST = 25;   // 공격 시 소모
-  const STA_CTR_COST = 30;   // 반격 시 소모
-  const STA_REGEN    = 18;   // 초당 회복량
+  const STA_ATK_COST = 15;   // 공격 시 소모
+  const STA_CTR_COST = 20;   // 반격 시 소모
+  const STA_REGEN    = 8;    // 초당 회복량
 
   const MOVE_BASE_MS = 220;  // 기본 이동 쿨다운 (ms)
   const TELEGRAPH_MS = 700;  // 적 공격 예고 시간 (ms)
@@ -155,7 +155,7 @@
       const r = rooms[i];
       if (grid[r.cy][r.cx] === T.STAIRS) continue;
 
-      const count = Math.min(3, 1 + Math.floor(Math.random()*2) + (f >= 5 ? 1 : 0));
+      const count = Math.min(6, 2 + Math.floor(Math.random()*3) + Math.floor(f/3));
       for (let n = 0; n < count && valid.length; n++) {
         const def = valid[Math.floor(Math.random() * valid.length)];
         let ex, ey, tries = 0;
