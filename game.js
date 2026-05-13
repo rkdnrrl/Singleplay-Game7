@@ -226,10 +226,11 @@
   }
 
   function updateCamera() {
-    const tx = player.px - VW*0.5*TS + TS*0.5;
-    const ty = player.py - VH*0.5*TS + TS*0.5;
-    camX = Math.round(Math.max(0, Math.min(DW*TS - CW, tx)));
-    camY = Math.round(Math.max(0, Math.min(DH*TS - CH, ty)));
+    // 격자 위치 기준으로 스냅 → 카메라가 연속으로 흐르지 않아 멀미 방지
+    const tx = player.gx * TS - VW * 0.5 * TS + TS * 0.5;
+    const ty = player.gy * TS - VH * 0.5 * TS + TS * 0.5;
+    camX = Math.round(Math.max(0, Math.min(DW * TS - CW, tx)));
+    camY = Math.round(Math.max(0, Math.min(DH * TS - CH, ty)));
   }
 
   // ══════════════════════════════════════════════════════════════
