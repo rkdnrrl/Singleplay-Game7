@@ -45,7 +45,7 @@
   let canvas, ctx, animId;
   let gameState = 'equip_select'; // equip_select | playing | dead
   let floor, dungeon, effects, frameCount;
-  let camX, camY, lastFrameAt, hudDirty;
+  let camX, camY, camTX, camTY, lastFrameAt, hudDirty;
 
   const player = {
     gx: 0, gy: 0,   // 격자 위치
@@ -226,11 +226,22 @@
   }
 
   function updateCamera() {
-    // 격자 위치 기준으로 스냅 → 카메라가 연속으로 흐르지 않아 멀미 방지
+    // 타겟은 격자 기준 (이동 완료 시에만 변경)
     const tx = player.gx * TS - VW * 0.5 * TS + TS * 0.5;
     const ty = player.gy * TS - VH * 0.5 * TS + TS * 0.5;
-    camX = Math.round(Math.max(0, Math.min(DW * TS - CW, tx)));
-    camY = Math.round(Math.max(0, Math.min(DH * TS - CH, ty)));
+    camTX = Math.max(0, Math.min(DW * TS - CW, tx));
+    camTY = Math.max(0, Math.min(DH * TS - CH, ty));
+    // 초기화 시 즉시 이동
+    if (camX === undefined || camX === null) { camX = camTX; camY = camTY; }
+  }
+
+  function lerpCamera() {
+    // 타겟까지 빠르게 보간 — 플레이어 이동 속도(220ms)보다 빠르게 도착
+    camX += (camTX - camX) * 0.22;
+    camY += (camTY - camY) * 0.22;
+    // 목적지 근방이면 스냅 (픽셀 떨림 방지)
+    if (Math.abs(camTX - camX) < 0.5) camX = camTX;
+    if (Math.abs(camTY - camY) < 0.5) camY = camTY;
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -801,6 +812,7 @@
     updateEffects(dt);
     updateFog();
     updateCamera();
+    lerpCamera();
     render();
     updateHud();
   }
@@ -863,7 +875,7 @@
 
     dungeon = generateDungeon(1);
     updateFog();
-    camX=0; camY=0; updateCamera();
+    camX = camTX = 0; camY = camTY = 0; updateCamera(); camX = camTX; camY = camTY;
     hudDirty = true;
 
     setGameState('playing');
