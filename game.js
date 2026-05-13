@@ -1044,7 +1044,16 @@
     ctx    = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    window.addEventListener('resize', () => resizeCanvas());
+    // 주소창·갤럭시 UI 가림 방지: 실제 보이는 높이를 CSS 변수로 주입
+    function updateVh() {
+      document.documentElement.style.setProperty('--vh', window.innerHeight + 'px');
+    }
+    updateVh();
+    window.addEventListener('resize', () => { updateVh(); resizeCanvas(); });
+    // visualViewport: 키보드 등으로 viewport 크기 변화 시 추가 대응
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => { updateVh(); resizeCanvas(); });
+    }
 
     setupInput();
     loadEquipment();

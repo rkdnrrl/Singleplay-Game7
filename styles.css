@@ -132,8 +132,9 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 #screen-game {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  height: 100vh;
+  height: 100vh;       /* 구형 브라우저 fallback */
+  height: 100dvh;      /* 모던 브라우저: dvh가 마지막이라 우선 적용 */
+  height: var(--vh);   /* JS로 window.innerHeight 직접 주입 (최우선) */
 }
 
 /* ── 상단 HUD ────────────────────────────────────────────── */
@@ -141,6 +142,7 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   display: flex;
   align-items: center;
   padding: 0.4rem 0.8rem;
+  padding-top: max(0.4rem, env(safe-area-inset-top));
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   gap: 0.5rem;
@@ -283,6 +285,7 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   align-items: center;
   justify-content: space-between;
   padding: 0.4rem 0.8rem;
+  padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
   background: var(--surface);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
