@@ -26,19 +26,26 @@
 
     <!-- 상단 HUD -->
     <div class="hud-top">
-      <div class="hud-stat">
-        <span class="hud-lbl">HP</span>
-        <div class="bar-outer"><div id="hp-bar" class="bar"></div></div>
-        <span id="hp-text" class="hud-val">100/100</span>
+      <div class="hud-main-row">
+        <div class="hud-stat">
+          <span class="hud-lbl">HP</span>
+          <div class="bar-outer"><div id="hp-bar" class="bar"></div></div>
+          <span id="hp-text" class="hud-val">100/100</span>
+        </div>
+        <div class="hud-mid">
+          <span id="floor-lbl" class="floor-lbl">B1F</span>
+          <span id="equip-name-hud" class="equip-lbl">맨손</span>
+        </div>
+        <div class="hud-stat hud-stat-right">
+          <span class="hud-lbl">내구</span>
+          <div class="bar-outer"><div id="dur-bar" class="bar bar-dur"></div></div>
+          <span id="dur-text" class="hud-val">-/-</span>
+        </div>
       </div>
-      <div class="hud-mid">
-        <span id="floor-lbl" class="floor-lbl">B1F</span>
-        <span id="equip-name-hud" class="equip-lbl">맨손</span>
-      </div>
-      <div class="hud-stat hud-stat-right">
-        <span class="hud-lbl">내구</span>
-        <div class="bar-outer"><div id="dur-bar" class="bar bar-dur"></div></div>
-        <span id="dur-text" class="hud-val">-/-</span>
+      <div class="hud-sta-row">
+        <span class="hud-lbl">스태미나</span>
+        <div class="bar-outer"><div id="sta-bar" class="bar bar-sta"></div></div>
+        <span id="sta-text" class="hud-val">100</span>
       </div>
     </div>
 

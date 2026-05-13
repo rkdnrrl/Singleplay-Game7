@@ -9,8 +9,15 @@
   // ── 상수 ───────────────────────────────────────────────────────
   const DW = 32, DH = 32;  // 던전 격자 크기
   const TS = 32;            // 타일 픽셀 크기
-  let VW = 11, VH = 15;    // 뷰포트 타일 수 (resizeCanvas에서 재계산)
+  const ZOOM = 1.6;         // 카메라 확대 배율 (클수록 타일이 크게 보임)
+  let VW = 7, VH = 11;     // 뷰포트 타일 수 (resizeCanvas에서 재계산)
   let CW = VW * TS, CH = VH * TS;
+
+  // 스태미나 상수
+  const STA_MAX      = 100;
+  const STA_ATK_COST = 25;   // 공격 시 소모
+  const STA_CTR_COST = 30;   // 반격 시 소모
+  const STA_REGEN    = 18;   // 초당 회복량
 
   const MOVE_BASE_MS = 220;  // 기본 이동 쿨다운 (ms)
   const TELEGRAPH_MS = 700;  // 적 공격 예고 시간 (ms)
@@ -61,12 +68,13 @@
     shieldActive: false,
     powerBonus: 0,
     xp: 0, kills: 0,
+    stamina: STA_MAX,
   };
 
   // ── DOM 참조 ───────────────────────────────────────────────────
   let $screenEquip, $screenGame, $screenDead;
   let $equipList, $equipStatus, $btnBare;
-  let $hpBar, $hpText, $durBar, $durText;
+  let $hpBar, $hpText, $durBar, $durText, $staBar, $staText;
   let $floorLbl, $equipNameHud, $itemSlots;
   let $rpPrompt, $rpBar, $rpCounter, $toast;
   let $btnCounter, $dpad, $deadStats, $btnRestart;
@@ -262,8 +270,9 @@
     const enemy = dungeon.enemies.find(e => !e.dead && e.gx===nx && e.gy===ny);
     if (enemy) { bumpAttack(enemy); player.lastMoveAt = now; return; }
 
-    // 이동
+    // 이동 (한 칸씩 즉시 스냅)
     player.gx = nx; player.gy = ny;
+    player.px = nx * TS; player.py = ny * TS;
     player.lastMoveAt = now;
     hudDirty = true;
 
@@ -276,6 +285,12 @@
   }
 
   function bumpAttack(enemy) {
+    if (player.stamina < STA_ATK_COST) {
+      toast('⚡ 스태미나 부족!');
+      spawnFx(player.px + TS/2, player.py - 10, '스태미나 부족', '#9e9e9e', 700);
+      return;
+    }
+    player.stamina -= STA_ATK_COST;
     const dmg = Math.max(1, (player.baseAtk + player.powerBonus) - enemy.def_);
     enemy.hp -= dmg;
     spawnFx(enemy.px + TS/2, enemy.py, `-${dmg}`, '#ff5722');
@@ -363,6 +378,12 @@
       spawnFx(player.px+TS/2, player.py-10, '공격 없음', '#606090', 600);
       return;
     }
+    if (player.stamina < STA_CTR_COST) {
+      toast('⚡ 스태미나 부족!');
+      spawnFx(player.px+TS/2, player.py-10, '스태미나 부족', '#9e9e9e', 700);
+      return;
+    }
+    player.stamina -= STA_CTR_COST;
 
     // 가장 임박한 적 (경과 시간이 가장 긴 것)
     const target = telegraphing.reduce((a,b) =>
@@ -737,6 +758,12 @@
 
     $floorLbl.textContent = `B${floor}F`;
 
+    // 스태미나 바
+    const staPct = player.stamina / STA_MAX * 100;
+    $staBar.style.width = staPct + '%';
+    $staBar.style.background = staPct > 50 ? '#ffca28' : staPct > 25 ? '#ff9800' : '#f44336';
+    $staText.textContent = Math.floor(player.stamina);
+
     // 아이템 슬롯 (종류별 묶음)
     $itemSlots.innerHTML = '';
     const grouped = {};
@@ -804,9 +831,9 @@
     else if (keys['ArrowLeft'] ||keys['a']||keys['A']) tryMove(-1, 0);
     else if (keys['ArrowRight']||keys['d']||keys['D']) tryMove( 1, 0);
 
-    // 플레이어 픽셀 위치 보간
-    player.px += (player.gx*TS - player.px) * 0.35;
-    player.py += (player.gy*TS - player.py) * 0.35;
+    // 스태미나 자연 회복
+    player.stamina = Math.min(STA_MAX, player.stamina + STA_REGEN * (dt / 1000));
+    if (hudDirty || true) hudDirty = true; // 스태미나는 매프레임 갱신
 
     updateEnemies();
     updateEffects(dt);
@@ -871,6 +898,7 @@
     player.powerBonus  = 0;
     player.inventory   = [];
     player.xp=0; player.kills=0;
+    player.stamina = STA_MAX;
     player.lastMoveAt=0;
 
     dungeon = generateDungeon(1);
@@ -1015,8 +1043,9 @@
     if (!wrap || !canvas) return;
     const maxW = wrap.clientWidth;
     const maxH = wrap.clientHeight;
-    VW = Math.min(DW, Math.max(7, Math.floor(maxW / TS)));
-    VH = Math.min(DH, Math.max(7, Math.floor(maxH / TS)));
+    const tileDisplay = TS * ZOOM;
+    VW = Math.min(DW, Math.max(5, Math.floor(maxW / tileDisplay)));
+    VH = Math.min(DH, Math.max(5, Math.floor(maxH / tileDisplay)));
     CW = VW * TS;
     CH = VH * TS;
     canvas.width  = CW;
@@ -1041,6 +1070,8 @@
     $hpText       = document.getElementById('hp-text');
     $durBar       = document.getElementById('dur-bar');
     $durText      = document.getElementById('dur-text');
+    $staBar       = document.getElementById('sta-bar');
+    $staText      = document.getElementById('sta-text');
     $floorLbl     = document.getElementById('floor-lbl');
     $equipNameHud = document.getElementById('equip-name-hud');
     $itemSlots    = document.getElementById('item-slots');
