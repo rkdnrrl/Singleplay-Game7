@@ -693,7 +693,10 @@
     // ── 조작 힌트 (좌하단) ───────────────────────────────────
     ctx.fillStyle='rgba(80,80,120,0.55)';
     ctx.font='10px monospace'; ctx.textAlign='left'; ctx.textBaseline='bottom';
-    ctx.fillText('WASD/방향키: 이동  Space: 반격  F: 아이템', 6, CH-4);
+    const isTouchDevice = navigator.maxTouchPoints > 0;
+    ctx.fillText(isTouchDevice
+      ? 'D패드: 이동  ⚡버튼: 반격  슬롯 탭: 아이템'
+      : 'WASD/방향키: 이동  Space: 반격  F: 아이템', 6, CH-4);
   }
 
   // ══════════════════════════════════════════════════════════════
