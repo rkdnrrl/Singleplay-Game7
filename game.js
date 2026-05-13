@@ -237,8 +237,8 @@
 
   function lerpCamera() {
     // 타겟까지 빠르게 보간 — 플레이어 이동 속도(220ms)보다 빠르게 도착
-    camX += (camTX - camX) * 0.22;
-    camY += (camTY - camY) * 0.22;
+    camX += (camTX - camX) * 0.07;
+    camY += (camTY - camY) * 0.07;
     // 목적지 근방이면 스냅 (픽셀 떨림 방지)
     if (Math.abs(camTX - camX) < 0.5) camX = camTX;
     if (Math.abs(camTY - camY) < 0.5) camY = camTY;
