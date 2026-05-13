@@ -7,10 +7,10 @@
   const platformApi = window.__ALP_PLATFORM_API__ || '';
 
   // ── 상수 ───────────────────────────────────────────────────────
-  const DW = 32, DH = 32;            // 던전 격자 크기
-  const TS = 32;                     // 타일 픽셀 크기
-  const VW = 19, VH = 19;           // 뷰포트 (타일 수)
-  const CW = VW * TS, CH = VH * TS; // 캔버스 픽셀 크기 (608×608)
+  const DW = 32, DH = 32;  // 던전 격자 크기
+  const TS = 32;            // 타일 픽셀 크기
+  let VW = 11, VH = 15;    // 뷰포트 타일 수 (resizeCanvas에서 재계산)
+  let CW = VW * TS, CH = VH * TS;
 
   const MOVE_BASE_MS = 220;  // 기본 이동 쿨다운 (ms)
   const TELEGRAPH_MS = 700;  // 적 공격 예고 시간 (ms)
@@ -818,9 +818,13 @@
       $deadStats.textContent =
         `B${floor}F 에서 전투 불능\n처치 ${player.kills}마리  ·  경험치 ${player.xp}`;
     }
-    if (s === 'playing' && !animId) {
-      lastFrameAt = 0; frameCount = 0;
-      animId = requestAnimationFrame(loop);
+    if (s === 'playing') {
+      resizeCanvas(); // screen-game이 visible 된 직후 정확한 크기 측정
+      updateCamera();
+      if (!animId) {
+        lastFrameAt = 0; frameCount = 0;
+        animId = requestAnimationFrame(loop);
+      }
     }
   }
 
@@ -991,6 +995,26 @@
   }
 
   // ══════════════════════════════════════════════════════════════
+  // 캔버스 동적 리사이즈
+  // ══════════════════════════════════════════════════════════════
+  function resizeCanvas() {
+    const wrap = document.querySelector('.canvas-wrap');
+    if (!wrap || !canvas) return;
+    const maxW = wrap.clientWidth;
+    const maxH = wrap.clientHeight;
+    VW = Math.min(DW, Math.max(7, Math.floor(maxW / TS)));
+    VH = Math.min(DH, Math.max(7, Math.floor(maxH / TS)));
+    CW = VW * TS;
+    CH = VH * TS;
+    canvas.width  = CW;
+    canvas.height = CH;
+    // canvas-wrap 전체를 채우도록 CSS 크기 조정
+    canvas.style.width  = maxW + 'px';
+    canvas.style.height = maxH + 'px';
+    if (ctx) ctx.imageSmoothingEnabled = false;
+  }
+
+  // ══════════════════════════════════════════════════════════════
   // 초기화
   // ══════════════════════════════════════════════════════════════
   function init() {
@@ -1016,11 +1040,11 @@
     $deadStats    = document.getElementById('dead-stats');
     $btnRestart   = document.getElementById('btn-restart');
 
-    canvas         = document.getElementById('canvas');
-    canvas.width   = CW;
-    canvas.height  = CH;
-    ctx            = canvas.getContext('2d');
+    canvas = document.getElementById('canvas');
+    ctx    = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
+
+    window.addEventListener('resize', () => resizeCanvas());
 
     setupInput();
     loadEquipment();
