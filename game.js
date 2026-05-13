@@ -1299,9 +1299,9 @@
     CH = VH * TS;
     canvas.width  = CW;
     canvas.height = CH;
-    // canvas-wrap 전체를 채우도록 CSS 크기 조정
-    canvas.style.width  = maxW + 'px';
-    canvas.style.height = maxH + 'px';
+    // 타일이 정사각형을 유지하도록 CSS 크기 = 타일수 × 표시 크기
+    canvas.style.width  = (VW * tileDisplay) + 'px';
+    canvas.style.height = (VH * tileDisplay) + 'px';
     if (ctx) ctx.imageSmoothingEnabled = false;
   }
 
