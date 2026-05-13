@@ -953,20 +953,36 @@
     $equipNameHud.textContent = player.equipment ? (player.equipment.name || '장비') : '맨손';
   }
 
-  function saveGame() {
+  async function saveGame() {
     const data = buildSaveData();
     if (!data) return;
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(_) {}
     if (alpToken && platformApi) {
-      fetch(`${platformApi}/api/dungeon/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
-        body: JSON.stringify({ data }),
-      }).catch(() => {
-        // 네트워크 오류 시 로컬 폴백
-        try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(_) {}
-      });
-    } else {
-      try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(_) {}
+      try {
+        await fetch(`${platformApi}/api/dungeon/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+          body: JSON.stringify({ data }),
+        });
+      } catch(_) {}
+    }
+  }
+
+  // 페이지 종료/백그라운드 전환 시 keepalive fetch로 저장
+  function saveGameOnUnload() {
+    if (gameState !== 'playing') return;
+    const data = buildSaveData();
+    if (!data) return;
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(_) {}
+    if (alpToken && platformApi) {
+      try {
+        fetch(`${platformApi}/api/dungeon/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+          body: JSON.stringify({ data }),
+          keepalive: true,
+        });
+      } catch(_) {}
     }
   }
 
@@ -1155,9 +1171,9 @@
     // 반격 버튼
     $btnCounter.addEventListener('click', tryCounter);
     $btnCounter.addEventListener('touchstart',(ev)=>{ ev.preventDefault(); tryCounter(); },{ passive:false });
-    $btnExit.addEventListener('click', () => {
-      saveGame();
+    $btnExit.addEventListener('click', async () => {
       if (animId) { cancelAnimationFrame(animId); animId = null; }
+      await saveGame();
       history.back();
     });
 
@@ -1248,6 +1264,10 @@
     }
     updateVh();
     window.addEventListener('resize', () => { updateVh(); resizeCanvas(); });
+    window.addEventListener('pagehide', saveGameOnUnload);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') saveGameOnUnload();
+    });
     // visualViewport: 키보드 등으로 viewport 크기 변화 시 추가 대응
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', () => { updateVh(); resizeCanvas(); });
