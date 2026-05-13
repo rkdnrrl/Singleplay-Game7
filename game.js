@@ -1029,7 +1029,10 @@
     // 반격 버튼
     $btnCounter.addEventListener('click', tryCounter);
     $btnCounter.addEventListener('touchstart',(ev)=>{ ev.preventDefault(); tryCounter(); },{ passive:false });
-    $btnExit.addEventListener('click', () => setGameState('equip'));
+    $btnExit.addEventListener('click', () => {
+      if (animId) { cancelAnimationFrame(animId); animId = null; }
+      setGameState('equip_select');
+    });
 
     // 시작 버튼들
     $btnBare.addEventListener('click', ()=>startGame(null));
