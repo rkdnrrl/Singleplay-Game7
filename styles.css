@@ -143,6 +143,15 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 
 .equip-status { color: var(--dim); font-size: 0.9rem; min-height: 1.2em; text-align: center; }
 
+.equip-section-hdr {
+  font-size: 0.82rem;
+  color: var(--dim);
+  padding: 0.5rem 0 0.2rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.3rem;
+}
+.equip-section-hdr:first-child { border-top: none; margin-top: 0; }
+
 /* ── 게임 화면 레이아웃 ──────────────────────────────────── */
 #screen-game {
   display: flex;
@@ -215,6 +224,7 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 }
 .floor-lbl { font-size: 1.3rem; color: var(--gold); line-height: 1; }
 .equip-lbl { font-size: 0.72rem; color: var(--dim); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equip-lbl-armor { color: #2196f3; }
 
 .btn-exit {
   font-size: 0.68rem;

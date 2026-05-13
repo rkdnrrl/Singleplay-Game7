@@ -28,6 +28,17 @@
   // 타일 종류
   const T = { WALL: 0, FLOOR: 1, STAIRS: 2, CHEST: 3 };
 
+  // ── 장비 슬롯 정의 ─────────────────────────────────────────────
+  const SLOT_DEFS = [
+    { id: 'weapon',    emoji: '⚔️', label: '무기',    weapon: true  },
+    { id: 'head',      emoji: '🪖', label: '머리',    weapon: false },
+    { id: 'chest',     emoji: '🧥', label: '상의',    weapon: false },
+    { id: 'pants',     emoji: '👖', label: '하의',    weapon: false },
+    { id: 'gloves',    emoji: '🧤', label: '손',      weapon: false },
+    { id: 'boots',     emoji: '👢', label: '다리',    weapon: false },
+    { id: 'accessory', emoji: '💍', label: '악세서리', weapon: false },
+  ];
+
   // ── 적 정의 ────────────────────────────────────────────────────
   const EDEFS = [
     { id:'slime',    name:'슬라임',    emoji:'🟢', hp:12,  atk:5,  def:0,  mvMs:700,  xp:5,  minF:1,  maxF:4  },
@@ -62,6 +73,7 @@
     moveDelay: MOVE_BASE_MS,
     lastMoveAt: 0,
     equipment: null,
+    equippedSlots: {},
     durability: 0, durabilityMax: 0,
     durBroken: false,
     inventory: [],
@@ -75,7 +87,7 @@
   let $screenEquip, $screenGame, $screenDead;
   let $equipList, $equipStatus, $btnBare, $btnContinue;
   let $hpBar, $hpText, $durBar, $durText, $staBar, $staText;
-  let $floorLbl, $equipNameHud, $itemSlots;
+  let $floorLbl, $equipNameHud, $armorNameHud, $itemSlots;
   let $rpPrompt, $rpBar, $rpCounter, $toast;
   let $btnCounter, $dpad, $deadStats, $btnRestart, $btnExit;
 
@@ -349,9 +361,10 @@
         if (activeEq) activeEq.curDur = player.durability;
         if (player.durBroken && player.durability > 0) {
           player.durBroken = false;
-          const s = player.equipment?.stats || {};
-          player.baseAtk = 5 + (s.attackBonus || 0);
-          player.baseDef = s.defenseBonus || 0;
+          const ws = player.equipment?.stats || {};
+          const a = calcArmorTotals();
+          player.baseAtk = 5 + a.atk + (ws.attackBonus  || 0);
+          player.baseDef = a.def +      (ws.defenseBonus || 0);
           toast('🔧 장비 수리 완료! 능력치 복구');
         } else {
           toast(`🔧 내구도 +${Math.max(0,rep)} 회복`);
@@ -525,8 +538,10 @@
       if (activeEq) activeEq.curDur = player.durability;
       if (player.durability === 0) {
         player.durBroken = true;
-        player.baseAtk = Math.max(1, Math.floor(player.baseAtk / 2));
-        player.baseDef = Math.max(0, Math.floor(player.baseDef / 2));
+        const ws = player.equipment?.stats || {};
+        const a = calcArmorTotals();
+        player.baseAtk = Math.max(1, 5 + a.atk + Math.floor((ws.attackBonus  || 0) / 2));
+        player.baseDef = a.def + Math.max(0,        Math.floor((ws.defenseBonus || 0) / 2));
         toast('⚠️ 장비 파손! 능력치 절반 감소');
       }
     }
@@ -590,6 +605,28 @@
     saveGame();
   }
 
+  function calcArmorTotals() {
+    let atk = 0, def = 0, spd = 0, hp = 0;
+    for (const eq of Object.values(player.equippedSlots || {})) {
+      if (!eq) continue;
+      const s = eq.stats || {};
+      atk += (s.attackBonus  || 0);
+      def += (s.defenseBonus || 0);
+      spd += (s.speedBonus   || 0);
+      hp  += (s.hpBonus      || 0);
+    }
+    return { atk, def, spd, hp };
+  }
+
+  function updateArmorHud() {
+    if (!$armorNameHud) return;
+    const tot = calcArmorTotals();
+    const parts = [];
+    if (tot.def > 0) parts.push(`🛡️+${tot.def}`);
+    if (tot.hp  > 0) parts.push(`❤️+${tot.hp}`);
+    $armorNameHud.textContent = parts.length ? parts.join(' ') : '방어구 없음';
+  }
+
   function equipWeapon(invItem) {
     // 기존 장착 해제
     const cur = player.inventory.find(it => it.type === 'equip' && it.active);
@@ -598,14 +635,15 @@
     invItem.active = true;
     player.equipment = invItem.equip;
     const s = invItem.equip.stats || {};
-    player.baseAtk      = 5 + (s.attackBonus  || 0);
-    player.baseDef      =     (s.defenseBonus || 0);
-    player.moveDelay    = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, s.speedBonus || 0)));
+    const a = calcArmorTotals();
+    player.baseAtk      = 5 + a.atk + (s.attackBonus  || 0);
+    player.baseDef      = a.def +      (s.defenseBonus || 0);
+    player.moveDelay    = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, a.spd + (s.speedBonus || 0))));
     player.durabilityMax = invItem.maxDur;
     player.durability    = invItem.curDur;
     player.durBroken     = invItem.curDur <= 0;
     $equipNameHud.textContent = invItem.equip.name || '장비';
-    if (cur) toast(`⚔️ ${invItem.equip.name} 장착!`); // 초기 장착 시엔 토스트 없음
+    if (cur) toast(`⚔️ ${invItem.equip.name} 장착!`);
     hudDirty = true;
   }
 
@@ -938,6 +976,7 @@
         stamina: player.stamina,
         inventory: player.inventory,
         equipment: player.equipment,
+        equippedSlots: player.equippedSlots || {},
       },
       dungeon: {
         grid: dungeon.grid,
@@ -994,7 +1033,9 @@
 
     effects = [];
     hudDirty = true;
+    player.equippedSlots = d.player.equippedSlots || {};
     $equipNameHud.textContent = player.equipment ? (player.equipment.name || '장비') : '맨손';
+    updateArmorHud();
   }
 
   async function saveGame() {
@@ -1060,48 +1101,61 @@
   // ══════════════════════════════════════════════════════════════
   // 게임 시작
   // ══════════════════════════════════════════════════════════════
-  function startGame(equipList) {
+  function startGame(equipList, slotEquips) {
     if (animId) { cancelAnimationFrame(animId); animId=null; }
     clearSave();
     floor = 1; effects = [];
 
-    // 기본 스탯 (맨손)
-    player.equipment    = null;
-    player.baseAtk      = 5;
-    player.baseDef      = 0;
-    player.moveDelay    = MOVE_BASE_MS;
-    player.durability   = 0; player.durabilityMax = 0;
-    player.durBroken    = false;
-    player.shieldActive = false;
-    player.powerBonus   = 0;
-    player.inventory    = [];
+    // 기본 스탯 초기화
+    player.equipment     = null;
+    player.equippedSlots = slotEquips || {};
+    player.baseAtk       = 5;
+    player.baseDef       = 0;
+    player.moveDelay     = MOVE_BASE_MS;
+    player.durability    = 0; player.durabilityMax = 0;
+    player.durBroken     = false;
+    player.shieldActive  = false;
+    player.powerBonus    = 0;
+    player.inventory     = [];
     player.xp=0; player.kills=0;
     player.stamina = STA_MAX;
     player.lastMoveAt=0;
     $equipNameHud.textContent = '맨손';
 
-    // 가져온 장비를 인벤토리에 추가
+    // 장비 슬롯 스탯 합산 적용
+    let armorSpd = 0, totalHp = 0;
+    for (const eq of Object.values(player.equippedSlots)) {
+      if (!eq) continue;
+      const s = eq.stats || {};
+      player.baseAtk += (s.attackBonus  || 0);
+      player.baseDef += (s.defenseBonus || 0);
+      armorSpd       += (s.speedBonus   || 0);
+      totalHp        += (s.hpBonus      || 0);
+    }
+    updateArmorHud();
+
+    // 무기 인벤토리에 추가
     const eqArr = Array.isArray(equipList) ? equipList : (equipList ? [equipList] : []);
     for (const eq of eqArr) {
       const s = eq.stats || {};
       const maxDur = s.durabilityMax || eq.durability || 100;
       player.inventory.push({ type:'equip', equip:eq, curDur: eq.durability ?? maxDur, maxDur, active:false });
     }
-    // 첫 번째 장비 자동 장착
+    // 첫 번째 무기 자동 장착
     const firstEquip = player.inventory.find(it => it.type === 'equip');
     if (firstEquip) {
       firstEquip.active = true;
       player.equipment = firstEquip.equip;
       const s = firstEquip.equip.stats || {};
-      player.baseAtk      = 5 + (s.attackBonus  || 0);
-      player.baseDef      =     (s.defenseBonus || 0);
-      player.moveDelay    = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, s.speedBonus || 0)));
+      player.baseAtk      += (s.attackBonus  || 0);
+      player.baseDef      += (s.defenseBonus || 0);
+      player.moveDelay     = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, armorSpd + (s.speedBonus || 0))));
       player.durabilityMax = firstEquip.maxDur;
       player.durability    = firstEquip.curDur;
       $equipNameHud.textContent = firstEquip.equip.name || '장비';
     }
 
-    player.maxHp = 100 + player.baseDef * 5;
+    player.maxHp = 100 + player.baseDef * 5 + totalHp;
     player.hp    = player.maxHp;
 
     dungeon = generateDungeon(1);
@@ -1122,82 +1176,129 @@
     }
     try {
       $equipStatus.textContent = '장비 불러오는 중…';
-      const res = await fetch(`${platformApi}/api/craft/equipment?limit=20`, {
+      const res = await fetch(`${platformApi}/api/craft/equipment?limit=40`, {
         headers: { Authorization:`Bearer ${alpToken}` },
       });
       if (!res.ok) throw new Error(res.status);
       const data = await res.json();
       const list = (data.equipment || []).filter(e => e && e.stats);
       renderEquipList(list);
-      $equipStatus.textContent = list.length
-        ? `장비 ${list.length}개 · 하나를 선택하세요`
+      const total = list.length;
+      $equipStatus.textContent = total
+        ? `장비 ${total}개 · 무기와 방어구를 선택하세요`
         : '장비가 없습니다. 대장간에서 만들어 오세요!';
     } catch {
       $equipStatus.textContent = '장비 불러오기 실패 — 맨손으로 입장합니다.';
     }
   }
 
-  let selectedEquips = []; // 선택된 장비 목록
+  let selectedEquips = []; // 선택된 무기 목록 (복수)
+  let selectedSlots  = {}; // { head: eq|null, chest: eq|null, ... }
+
+  function makeEquipCard(eq) {
+    const s   = eq.stats || {};
+    const slotId  = s.equipSlot || 'weapon';
+    const slotDef = SLOT_DEFS.find(d => d.id === slotId) || SLOT_DEFS[0];
+    const card = document.createElement('div');
+    card.className = 'equip-card';
+    card.setAttribute('role','button'); card.tabIndex=0;
+
+    const thumb = document.createElement('div');
+    thumb.className='equip-thumb';
+    const pa = eq.pixelArt || eq.pixel_art;
+    if (pa && pa.imageDataUrl) {
+      const img=document.createElement('img');
+      img.src=pa.imageDataUrl; img.width=52; img.height=52;
+      thumb.appendChild(img);
+    } else {
+      thumb.textContent = eq.itemEmoji || slotDef.emoji;
+    }
+
+    const info = document.createElement('div');
+    info.className = 'equip-info';
+    const tier = String(eq.tier||'common').toLowerCase();
+    const rarityClass = {legendary:'rarity-legendary',epic:'rarity-epic',rare:'rarity-rare'}[tier]||'rarity-common';
+    const parts = [];
+    if (s.attackBonus  > 0) parts.push(`공격 <span>+${s.attackBonus}</span>`);
+    if (s.defenseBonus > 0) parts.push(`방어 <span>+${s.defenseBonus}</span>`);
+    if (s.speedBonus   > 0) parts.push(`속도 <span>+${((s.speedBonus||0)*100).toFixed(0)}%</span>`);
+    if (s.hpBonus      > 0) parts.push(`HP <span>+${s.hpBonus}</span>`);
+    if ((s.durabilityMax||0) > 0) parts.push(`내구 <span>${s.durabilityMax}</span>`);
+    info.innerHTML = `
+      <div class="equip-card-name ${rarityClass}">${escHtml(eq.name||'장비')} <span style="opacity:0.5;font-size:0.85em">${slotDef.emoji}</span></div>
+      <div class="equip-card-stats">${parts.join(' · ')||'-'}</div>`;
+
+    const check = document.createElement('span');
+    check.className = 'equip-check';
+    check.textContent = '✓';
+
+    card.appendChild(thumb); card.appendChild(info); card.appendChild(check);
+    return card;
+  }
 
   function renderEquipList(list) {
     $equipList.innerHTML = '';
     selectedEquips = [];
+    selectedSlots  = {};
     updateEnterBtn();
 
-    for (const eq of list) {
-      const s   = eq.stats || {};
-      const card = document.createElement('div');
-      card.className = 'equip-card';
-      card.setAttribute('role','button'); card.tabIndex=0;
+    let hasAny = false;
+    for (const def of SLOT_DEFS) {
+      const items = list.filter(e => (e.stats?.equipSlot || 'weapon') === def.id);
+      if (items.length === 0) continue;
+      hasAny = true;
 
-      const thumb = document.createElement('div');
-      thumb.className='equip-thumb';
-      const pa = eq.pixelArt || eq.pixel_art;
-      if (pa && pa.imageDataUrl) {
-        const img=document.createElement('img');
-        img.src=pa.imageDataUrl; img.width=52; img.height=52;
-        thumb.appendChild(img);
-      } else {
-        thumb.textContent = eq.itemEmoji || '⚔️';
+      const hdr = document.createElement('p');
+      hdr.className = 'equip-section-hdr';
+      hdr.textContent = def.weapon
+        ? `${def.emoji} ${def.label} (복수 선택, 던전 중 교체)`
+        : `${def.emoji} ${def.label} (1개 선택)`;
+      $equipList.appendChild(hdr);
+
+      let slotCardPairs = [];
+      for (const eq of items) {
+        const card = makeEquipCard(eq);
+        if (def.weapon) {
+          const toggle = () => {
+            const idx = selectedEquips.indexOf(eq);
+            if (idx === -1) { selectedEquips.push(eq); card.classList.add('equip-selected'); }
+            else            { selectedEquips.splice(idx,1); card.classList.remove('equip-selected'); }
+            updateEnterBtn();
+          };
+          card.onclick = toggle;
+          card.onkeydown = ev => { if(ev.key==='Enter'||ev.key===' ') toggle(); };
+        } else {
+          slotCardPairs.push({ eq, card });
+          const select = () => {
+            if (selectedSlots[def.id] === eq) {
+              selectedSlots[def.id] = null;
+              card.classList.remove('equip-selected');
+            } else {
+              slotCardPairs.forEach(p => p.card.classList.remove('equip-selected'));
+              selectedSlots[def.id] = eq;
+              card.classList.add('equip-selected');
+            }
+            updateEnterBtn();
+          };
+          card.onclick = select;
+          card.onkeydown = ev => { if(ev.key==='Enter'||ev.key===' ') select(); };
+        }
+        $equipList.appendChild(card);
       }
+    }
 
-      const info = document.createElement('div');
-      info.className = 'equip-info';
-      const spdPct = ((s.speedBonus||0)*100).toFixed(0);
-      const tier   = String(eq.tier||'common').toLowerCase();
-      const rarityClass = {legendary:'rarity-legendary',epic:'rarity-epic',rare:'rarity-rare'}[tier]||'rarity-common';
-      info.innerHTML = `
-        <div class="equip-card-name ${rarityClass}">${escHtml(eq.name||'장비')}</div>
-        <div class="equip-card-stats">
-          공격 <span>+${s.attackBonus||0}</span> ·
-          방어 <span>+${s.defenseBonus||0}</span> ·
-          속도 <span>+${spdPct}%</span> ·
-          내구 <span>${eq.durability??s.durabilityMax??'-'}</span>
-        </div>`;
-
-      const check = document.createElement('span');
-      check.className = 'equip-check';
-      check.textContent = '✓';
-
-      card.appendChild(thumb); card.appendChild(info); card.appendChild(check);
-
-      const toggle = () => {
-        const idx = selectedEquips.indexOf(eq);
-        if (idx === -1) { selectedEquips.push(eq); card.classList.add('equip-selected'); }
-        else            { selectedEquips.splice(idx,1); card.classList.remove('equip-selected'); }
-        updateEnterBtn();
-      };
-      card.onclick = toggle;
-      card.onkeydown = (ev) => { if(ev.key==='Enter'||ev.key===' ') toggle(); };
-      $equipList.appendChild(card);
+    if (!hasAny) {
+      $equipList.innerHTML = '<p style="color:var(--dim);text-align:center;padding:1rem">장비가 없습니다. 대장간에서 만들어 오세요!</p>';
     }
   }
 
   function updateEnterBtn() {
     const $btn = document.getElementById('btn-enter');
     if (!$btn) return;
-    if (selectedEquips.length > 0) {
-      $btn.textContent = `⚔️ 입장 (${selectedEquips.length}개)`;
+    const slotCount = Object.values(selectedSlots).filter(Boolean).length;
+    const total = selectedEquips.length + slotCount;
+    if (total > 0) {
+      $btn.textContent = `⚔️ 입장 (${total}개)`;
       $btn.disabled = false;
     } else {
       $btn.textContent = '⚔️ 입장';
@@ -1276,8 +1377,8 @@
         $btnContinue.classList.add('hidden');
       }
     });
-    document.getElementById('btn-enter').addEventListener('click', () => startGame(selectedEquips));
-    $btnBare.addEventListener('click', ()=>startGame(null));
+    document.getElementById('btn-enter').addEventListener('click', () => startGame(selectedEquips, selectedSlots));
+    $btnBare.addEventListener('click', ()=>startGame(null, {}));
     $btnRestart.addEventListener('click', ()=>{
       if(animId){ cancelAnimationFrame(animId); animId=null; }
       setGameState('equip_select');
@@ -1325,6 +1426,7 @@
     $staText      = document.getElementById('sta-text');
     $floorLbl     = document.getElementById('floor-lbl');
     $equipNameHud = document.getElementById('equip-name-hud');
+    $armorNameHud = document.getElementById('armor-name-hud');
     $itemSlots    = document.getElementById('item-slots');
     $rpPrompt     = document.getElementById('reaction-prompt');
     $rpBar        = document.getElementById('rp-bar');
