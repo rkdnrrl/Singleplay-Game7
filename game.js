@@ -306,6 +306,7 @@
     enemy.hp -= dmg;
     spawnFx(enemy.px + TS/2, enemy.py, `-${dmg}`, '#ff5722');
     if (enemy.hp <= 0) killEnemy(enemy);
+    damageWeaponDur();
     hudDirty = true;
   }
 
@@ -439,6 +440,7 @@
     spawnFx(player.px+TS/2, player.py-10, perfect ? '⚡ 완벽!' : '⚡', color, 800);
 
     if (target.hp <= 0) killEnemy(target);
+    damageWeaponDur();
     hudDirty = true;
   }
 
@@ -531,20 +533,9 @@
     player.hp -= dmg;
     spawnFx(player.px+TS/2, player.py-10, `-${dmg}`, '#f44336');
 
-    // 내구도 감소
-    if (player.durabilityMax > 0 && !player.durBroken) {
-      player.durability = Math.max(0, player.durability - 1);
-      const activeEq = player.inventory.find(it => it.type === 'equip' && it.active);
-      if (activeEq) activeEq.curDur = player.durability;
-      if (player.durability === 0) {
-        player.durBroken = true;
-        const ws = player.equipment?.stats || {};
-        const a = calcArmorTotals();
-        player.baseAtk = Math.max(1, 5 + a.atk + Math.floor((ws.attackBonus  || 0) / 2));
-        player.baseDef = a.def + Math.max(0,        Math.floor((ws.defenseBonus || 0) / 2));
-        toast('⚠️ 장비 파손! 능력치 절반 감소');
-      }
-    }
+    // 피격 부위 방어구 내구도 감소
+    const hitSlot = pickHitSlot();
+    if (hitSlot) damageArmorSlot(hitSlot);
 
     enemy.state='cooldown'; enemy.nextMoveAt = performance.now()+500;
     hudDirty = true;
@@ -607,9 +598,10 @@
 
   function calcArmorTotals() {
     let atk = 0, def = 0, spd = 0, hp = 0;
-    for (const eq of Object.values(player.equippedSlots || {})) {
-      if (!eq) continue;
-      const s = eq.stats || {};
+    for (const wrapper of Object.values(player.equippedSlots || {})) {
+      if (!wrapper) continue;
+      if (wrapper.curDur <= 0) continue; // 파괴된 방어구는 스탯 없음
+      const s = (wrapper.equip || wrapper).stats || {};
       atk += (s.attackBonus  || 0);
       def += (s.defenseBonus || 0);
       spd += (s.speedBonus   || 0);
@@ -618,12 +610,97 @@
     return { atk, def, spd, hp };
   }
 
+  function deleteEquipFromServer(id) {
+    if (!alpToken || !platformApi || !id) return;
+    fetch(`${platformApi}/api/craft/equipment/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${alpToken}` },
+    }).catch(() => {});
+  }
+
+  function pickHitSlot() {
+    const WEIGHTS = { chest:4, head:2, pants:2, gloves:1, boots:1, accessory:1 };
+    const equipped = Object.keys(player.equippedSlots).filter(
+      id => player.equippedSlots[id] && WEIGHTS[id]
+    );
+    if (!equipped.length) return null;
+    let total = equipped.reduce((s, id) => s + WEIGHTS[id], 0);
+    let r = Math.random() * total;
+    for (const id of equipped) {
+      r -= WEIGHTS[id];
+      if (r <= 0) return id;
+    }
+    return equipped[equipped.length - 1];
+  }
+
+  function damageArmorSlot(slotId) {
+    const wrapper = player.equippedSlots[slotId];
+    if (!wrapper || wrapper.curDur <= 0) return;
+    wrapper.curDur = Math.max(0, wrapper.curDur - 1);
+    const slotDef = SLOT_DEFS.find(d => d.id === slotId);
+    const label = slotDef ? slotDef.label : slotId;
+    if (wrapper.curDur === 0) {
+      const eq = wrapper.equip || wrapper;
+      spawnFx(player.px+TS/2, player.py-10, `${label} 파괴!`, '#ff5722', 1200);
+      toast(`💥 ${eq.name} 파괴됨!`);
+      deleteEquipFromServer(eq.id);
+      delete player.equippedSlots[slotId];
+      const a = calcArmorTotals();
+      const ws = player.equipment?.stats || {};
+      player.baseAtk = 5 + a.atk + (player.durBroken ? Math.floor((ws.attackBonus||0)/2) : (ws.attackBonus||0));
+      player.baseDef = a.def + (player.durBroken ? Math.floor((ws.defenseBonus||0)/2) : (ws.defenseBonus||0));
+      player.moveDelay = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, a.spd + (ws.speedBonus||0))));
+      const newMaxHp = Math.max(50, 100 + player.baseDef * 5 + a.hp);
+      if (newMaxHp < player.maxHp) { player.hp = Math.min(player.hp, newMaxHp); player.maxHp = newMaxHp; }
+      updateArmorHud();
+    } else if (wrapper.curDur <= 3) {
+      spawnFx(player.px+TS/2, player.py-10, `${label} 파손!`, '#ff9800', 800);
+    }
+    hudDirty = true;
+  }
+
+  function damageWeaponDur() {
+    if (!player.equipment || player.durabilityMax <= 0 || player.durBroken) return;
+    player.durability = Math.max(0, player.durability - 1);
+    const activeEq = player.inventory.find(it => it.type === 'equip' && it.active);
+    if (activeEq) activeEq.curDur = player.durability;
+    if (player.durability === 0) destroyWeapon();
+  }
+
+  function destroyWeapon() {
+    const activeEq = player.inventory.find(it => it.type === 'equip' && it.active);
+    if (!activeEq) return;
+    const eq = activeEq.equip;
+    spawnFx(player.px+TS/2, player.py-10, '무기 파괴!', '#ff5722', 1200);
+    toast(`💥 ${eq.name} 파괴됨!`);
+    deleteEquipFromServer(eq.id);
+    const idx = player.inventory.indexOf(activeEq);
+    if (idx !== -1) player.inventory.splice(idx, 1);
+    player.equipment = null;
+    player.durability = 0; player.durabilityMax = 0;
+    player.durBroken = false;
+    const nextEq = player.inventory.find(it => it.type === 'equip');
+    if (nextEq) {
+      equipWeapon(nextEq);
+    } else {
+      const a = calcArmorTotals();
+      player.baseAtk = 5 + a.atk;
+      player.baseDef = a.def;
+      player.moveDelay = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, a.spd)));
+      if ($equipNameHud) $equipNameHud.textContent = '맨손';
+    }
+    hudDirty = true;
+  }
+
   function updateArmorHud() {
     if (!$armorNameHud) return;
     const tot = calcArmorTotals();
     const parts = [];
     if (tot.def > 0) parts.push(`🛡️+${tot.def}`);
     if (tot.hp  > 0) parts.push(`❤️+${tot.hp}`);
+    // 파괴된 슬롯 수 표시
+    const broken = Object.values(player.equippedSlots).filter(w => w && w.curDur <= 0).length;
+    if (broken > 0) parts.push(`💥${broken}파괴`);
     $armorNameHud.textContent = parts.length ? parts.join(' ') : '방어구 없음';
   }
 
@@ -1033,7 +1110,17 @@
 
     effects = [];
     hudDirty = true;
-    player.equippedSlots = d.player.equippedSlots || {};
+    // 구버전 저장(raw eq) → 신버전(wrapper) 마이그레이션
+    player.equippedSlots = {};
+    for (const [slotId, val] of Object.entries(d.player.equippedSlots || {})) {
+      if (!val) continue;
+      if (val.equip) {
+        player.equippedSlots[slotId] = val; // 이미 래퍼 형식
+      } else {
+        const maxDur = Math.max(15, val.stats?.durabilityMax || 30);
+        player.equippedSlots[slotId] = { equip: val, curDur: maxDur, maxDur };
+      }
+    }
     $equipNameHud.textContent = player.equipment ? (player.equipment.name || '장비') : '맨손';
     updateArmorHud();
   }
@@ -1108,7 +1195,7 @@
 
     // 기본 스탯 초기화
     player.equipment     = null;
-    player.equippedSlots = slotEquips || {};
+    player.equippedSlots = {};
     player.baseAtk       = 5;
     player.baseDef       = 0;
     player.moveDelay     = MOVE_BASE_MS;
@@ -1122,11 +1209,18 @@
     player.lastMoveAt=0;
     $equipNameHud.textContent = '맨손';
 
+    // 선택된 방어구를 내구도 래퍼로 감싸기
+    for (const [slotId, eq] of Object.entries(slotEquips || {})) {
+      if (!eq) continue;
+      const maxDur = Math.max(15, (eq.stats?.durabilityMax || 30));
+      player.equippedSlots[slotId] = { equip: eq, curDur: maxDur, maxDur };
+    }
+
     // 장비 슬롯 스탯 합산 적용
     let armorSpd = 0, totalHp = 0;
-    for (const eq of Object.values(player.equippedSlots)) {
-      if (!eq) continue;
-      const s = eq.stats || {};
+    for (const wrapper of Object.values(player.equippedSlots)) {
+      if (!wrapper) continue;
+      const s = wrapper.equip.stats || {};
       player.baseAtk += (s.attackBonus  || 0);
       player.baseDef += (s.defenseBonus || 0);
       armorSpd       += (s.speedBonus   || 0);
