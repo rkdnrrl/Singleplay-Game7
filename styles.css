@@ -1,0 +1,397 @@
+/* ── 변수 ─────────────────────────────────────────────────── */
+:root {
+  --bg:      #050510;
+  --surface: #0c0c1e;
+  --border:  #1e1e3a;
+  --accent:  #7c4dff;
+  --text:    #ddd8f5;
+  --dim:     #5a5a90;
+  --gold:    #f5c518;
+  --danger:  #f44336;
+  --warn:    #ff9800;
+  --safe:    #4caf50;
+  --dur:     #2196f3;
+}
+
+/* ── 리셋 ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Jua', 'Malgun Gothic', sans-serif;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen { width: 100%; max-width: 640px; }
+.hidden { display: none !important; }
+
+/* ── 버튼 공용 ───────────────────────────────────────────── */
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  padding: 0.7rem 2.2rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-primary:active { opacity: 0.7; }
+
+.btn-naked {
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--dim);
+  padding: 0.5rem 1.6rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-naked:hover { color: var(--text); border-color: var(--text); }
+
+/* ── 장비 선택 화면 ──────────────────────────────────────── */
+.select-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1.5rem;
+  gap: 1rem;
+  min-height: 100vh;
+  justify-content: center;
+}
+
+.select-title {
+  font-size: 2.2rem;
+  color: var(--gold);
+  text-shadow: 0 0 16px rgba(245,197,24,0.5);
+}
+
+.select-sub { color: var(--dim); font-size: 0.95rem; }
+
+.equip-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.equip-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.equip-card:hover  { border-color: var(--accent); background: #12122a; }
+.equip-card:active { background: #1a1a33; }
+
+.equip-thumb {
+  width: 52px; height: 52px;
+  border-radius: 6px;
+  background: #0a0a14;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.equip-thumb img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.equip-info { flex: 1; min-width: 0; }
+.equip-card-name  { font-size: 1rem; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.equip-card-stats { font-size: 0.78rem; color: var(--dim); }
+.equip-card-stats span { color: var(--text); }
+
+.equip-status { color: var(--dim); font-size: 0.9rem; min-height: 1.2em; text-align: center; }
+
+/* ── 게임 화면 레이아웃 ──────────────────────────────────── */
+#screen-game {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  height: 100vh;
+}
+
+/* ── 상단 HUD ────────────────────────────────────────────── */
+.hud-top {
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  gap: 0.5rem;
+  min-height: 42px;
+  flex-shrink: 0;
+}
+
+.hud-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+}
+.hud-stat-right { justify-content: flex-end; }
+
+.hud-lbl { font-size: 0.68rem; color: var(--dim); white-space: nowrap; }
+.hud-val { font-size: 0.68rem; color: var(--dim); white-space: nowrap; }
+
+.bar-outer {
+  flex: 1;
+  height: 6px;
+  background: #12121e;
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 36px;
+}
+.bar {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--safe);
+  transition: width 0.2s, background 0.3s;
+  width: 100%;
+}
+.bar-dur { background: var(--dur); }
+
+.hud-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  padding: 0 0.4rem;
+}
+.floor-lbl { font-size: 1.1rem; color: var(--gold); line-height: 1; }
+.equip-lbl { font-size: 0.65rem; color: var(--dim); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── 캔버스 영역 ──────────────────────────────────────────── */
+.canvas-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #03030a;
+  min-height: 0;
+}
+
+#canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* ── 반응 프롬프트 ────────────────────────────────────────── */
+.reaction-prompt {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(8, 8, 24, 0.94);
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  padding: 7px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 220px;
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(244,67,54,0.4);
+  animation: rpIn 0.15s ease;
+}
+@keyframes rpIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.rp-bar-outer {
+  width: 100%;
+  height: 5px;
+  background: #1a1a2e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.rp-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9800, #f44336);
+  border-radius: 3px;
+  width: 100%;
+}
+
+.rp-btns { display: flex; gap: 1.2rem; font-size: 0.82rem; }
+.rp-dodge         { color: #00bcd4; }
+.rp-counter-btn   { color: #ff9800; font-weight: bold; transition: color 0.1s; }
+.rp-counter-btn.perfect {
+  color: var(--gold);
+  text-shadow: 0 0 8px var(--gold);
+  animation: perfectPulse 0.3s ease infinite alternate;
+}
+@keyframes perfectPulse {
+  from { opacity: 0.8; } to { opacity: 1; }
+}
+
+/* ── 토스트 ──────────────────────────────────────────────── */
+.toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(8,8,24,0.92);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.88rem;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: toastIn 0.2s ease;
+  max-width: 90%;
+  text-align: center;
+}
+@keyframes toastIn {
+  from { opacity:0; transform:translateX(-50%) translateY(-5px); }
+  to   { opacity:1; transform:translateX(-50%) translateY(0); }
+}
+
+/* ── 하단 HUD ────────────────────────────────────────────── */
+.hud-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.8rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 84px;
+  gap: 0.5rem;
+}
+
+/* ── 아이템 슬롯 ──────────────────────────────────────────── */
+.item-slots {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  flex: 1;
+  align-content: flex-start;
+}
+
+.item-btn {
+  width: 50px; height: 50px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: border-color 0.12s, background 0.12s;
+  cursor: pointer;
+}
+.item-btn:hover  { border-color: var(--accent); background: #12122a; }
+.item-btn:active { background: #1a1a33; }
+.item-btn .item-count {
+  position: absolute;
+  bottom: 2px; right: 4px;
+  font-size: 0.62rem;
+  color: var(--dim);
+  line-height: 1;
+}
+
+/* ── D패드 ────────────────────────────────────────────────── */
+.dpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.dpad-row { display: flex; gap: 3px; justify-content: center; }
+
+.dpad-btn {
+  width: 44px; height: 44px;
+  background: #0e0e20;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.dpad-btn:active { background: #1e1e38; }
+
+.dpad-ctr {
+  background: #180c00;
+  border-color: var(--warn);
+  color: var(--warn);
+  font-size: 18px;
+}
+.dpad-ctr:active { background: #2a1500; }
+
+/* ── 컨트롤 힌트 (키보드) ──────────────────────────────── */
+.key-hint {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  font-size: 0.62rem;
+  color: var(--dim);
+  pointer-events: none;
+  line-height: 1.6;
+}
+
+/* ── 사망 화면 ───────────────────────────────────────────── */
+#screen-dead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.dead-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 2rem;
+  gap: 1rem;
+  text-align: center;
+}
+.dead-emoji { font-size: 4rem; }
+.dead-title { font-size: 2rem; color: var(--danger); }
+.dead-stats { color: var(--dim); font-size: 0.95rem; line-height: 1.9; }
+
+/* ── 희귀도 색상 ─────────────────────────────────────────── */
+.rarity-common    { color: #9e9e9e; }
+.rarity-rare      { color: #42a5f5; }
+.rarity-epic      { color: #ab47bc; }
+.rarity-legendary { color: var(--gold); }
+
+/* ── 스크롤바 ────────────────────────────────────────────── */
+.equip-list::-webkit-scrollbar { width: 4px; }
+.equip-list::-webkit-scrollbar-track { background: transparent; }
+.equip-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }

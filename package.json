@@ -1,0 +1,12 @@
+{
+  "name": "dungeon-adventure",
+  "version": "1.0.0",
+  "description": "던전 탐험 - 대장간 장비 실전 활용 (Singleplay-Game7)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

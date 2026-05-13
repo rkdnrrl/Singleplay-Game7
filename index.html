@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>⚔️ 던전 탐험</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── 장비 선택 화면 ───────────────────────────────── -->
+  <div id="screen-equip" class="screen">
+    <div class="select-card">
+      <h1 class="select-title">⚔️ 던전 탐험</h1>
+      <p class="select-sub">대장간에서 만든 장비를 골라 입장하세요</p>
+      <div id="equip-list" class="equip-list"></div>
+      <p id="equip-status" class="equip-status">장비 불러오는 중…</p>
+      <button id="btn-bare" class="btn-naked">🏃 맨손으로 입장</button>
+    </div>
+  </div>
+
+  <!-- ── 게임 화면 ─────────────────────────────────────── -->
+  <div id="screen-game" class="screen hidden">
+
+    <!-- 상단 HUD -->
+    <div class="hud-top">
+      <div class="hud-stat">
+        <span class="hud-lbl">HP</span>
+        <div class="bar-outer"><div id="hp-bar" class="bar"></div></div>
+        <span id="hp-text" class="hud-val">100/100</span>
+      </div>
+      <div class="hud-mid">
+        <span id="floor-lbl" class="floor-lbl">B1F</span>
+        <span id="equip-name-hud" class="equip-lbl">맨손</span>
+      </div>
+      <div class="hud-stat hud-stat-right">
+        <span class="hud-lbl">내구</span>
+        <div class="bar-outer"><div id="dur-bar" class="bar bar-dur"></div></div>
+        <span id="dur-text" class="hud-val">-/-</span>
+      </div>
+    </div>
+
+    <!-- 캔버스 영역 -->
+    <div class="canvas-wrap">
+      <canvas id="canvas"></canvas>
+
+      <!-- 반응 프롬프트 -->
+      <div id="reaction-prompt" class="reaction-prompt hidden">
+        <div class="rp-bar-outer"><div id="rp-bar" class="rp-bar"></div></div>
+        <div class="rp-btns">
+          <span class="rp-dodge">🏃 방향키 회피</span>
+          <span id="rp-counter" class="rp-counter-btn">⚡ Space 반격</span>
+        </div>
+      </div>
+
+      <!-- 토스트 메시지 -->
+      <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <!-- 하단 HUD -->
+    <div class="hud-bottom">
+      <div id="item-slots" class="item-slots"></div>
+      <div class="dpad" aria-hidden="true">
+        <div class="dpad-row">
+          <button class="dpad-btn" data-dx="0" data-dy="-1">▲</button>
+        </div>
+        <div class="dpad-row">
+          <button class="dpad-btn" data-dx="-1" data-dy="0">◀</button>
+          <button class="dpad-btn dpad-ctr" id="btn-counter">⚡</button>
+          <button class="dpad-btn" data-dx="1" data-dy="0">▶</button>
+        </div>
+        <div class="dpad-row">
+          <button class="dpad-btn" data-dx="0" data-dy="1">▼</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── 사망 화면 ─────────────────────────────────────── -->
+  <div id="screen-dead" class="screen hidden">
+    <div class="dead-card">
+      <p class="dead-emoji">💀</p>
+      <h2 class="dead-title">전투 불능</h2>
+      <p id="dead-stats" class="dead-stats"></p>
+      <button id="btn-restart" class="btn-primary">다시 시작</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
