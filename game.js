@@ -832,8 +832,8 @@
     else if (keys['ArrowRight']||keys['d']||keys['D']) tryMove( 1, 0);
 
     // 플레이어 픽셀 보간 (스무스 이동)
-    player.px += (player.gx*TS - player.px) * 0.35;
-    player.py += (player.gy*TS - player.py) * 0.35;
+    player.px += (player.gx*TS - player.px) * 0.18;
+    player.py += (player.gy*TS - player.py) * 0.18;
 
     // 스태미나 자연 회복
     player.stamina = Math.min(STA_MAX, player.stamina + STA_REGEN * (dt / 1000));
