@@ -9,7 +9,7 @@
   // ── 상수 ───────────────────────────────────────────────────────
   const DW = 32, DH = 32;  // 던전 격자 크기
   const TS = 32;            // 타일 픽셀 크기
-  const ZOOM = 1.0;         // 카메라 확대 배율 (클수록 타일이 크게 보임)
+  const ZOOM = 1.3;         // 카메라 확대 배율 (클수록 타일이 크게 보임)
   let VW = 7, VH = 11;     // 뷰포트 타일 수 (resizeCanvas에서 재계산)
   let CW = VW * TS, CH = VH * TS;
 
@@ -77,7 +77,7 @@
   let $hpBar, $hpText, $durBar, $durText, $staBar, $staText;
   let $floorLbl, $equipNameHud, $itemSlots;
   let $rpPrompt, $rpBar, $rpCounter, $toast;
-  let $btnCounter, $dpad, $deadStats, $btnRestart;
+  let $btnCounter, $dpad, $deadStats, $btnRestart, $btnExit;
 
   // ── 입력 ───────────────────────────────────────────────────────
   const keys = {};
@@ -1029,6 +1029,7 @@
     // 반격 버튼
     $btnCounter.addEventListener('click', tryCounter);
     $btnCounter.addEventListener('touchstart',(ev)=>{ ev.preventDefault(); tryCounter(); },{ passive:false });
+    $btnExit.addEventListener('click', () => setGameState('equip'));
 
     // 시작 버튼들
     $btnBare.addEventListener('click', ()=>startGame(null));
@@ -1087,6 +1088,7 @@
     $dpad         = document.querySelector('.dpad');
     $deadStats    = document.getElementById('dead-stats');
     $btnRestart   = document.getElementById('btn-restart');
+    $btnExit      = document.getElementById('btn-exit');
 
     canvas = document.getElementById('canvas');
     ctx    = canvas.getContext('2d');

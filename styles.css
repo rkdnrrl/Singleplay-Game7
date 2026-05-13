@@ -201,6 +201,18 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 .floor-lbl { font-size: 1.3rem; color: var(--gold); line-height: 1; }
 .equip-lbl { font-size: 0.72rem; color: var(--dim); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+.btn-exit {
+  font-size: 0.62rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--dim);
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-exit:hover  { color: var(--danger); border-color: var(--danger); }
+.btn-exit:active { opacity: 0.7; }
+
 /* ── 캔버스 영역 ──────────────────────────────────────────── */
 .canvas-wrap {
   flex: 1;
