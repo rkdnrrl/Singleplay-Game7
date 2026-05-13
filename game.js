@@ -9,7 +9,7 @@
   // ── 상수 ───────────────────────────────────────────────────────
   const DW = 32, DH = 32;  // 던전 격자 크기
   const TS = 32;            // 타일 픽셀 크기
-  const ZOOM = 1.2;         // 카메라 확대 배율 (클수록 타일이 크게 보임)
+  const ZOOM = 1.0;         // 카메라 확대 배율 (클수록 타일이 크게 보임)
   let VW = 7, VH = 11;     // 뷰포트 타일 수 (resizeCanvas에서 재계산)
   let CW = VW * TS, CH = VH * TS;
 
@@ -372,17 +372,18 @@
     if (gameState !== 'playing') return;
     const now = performance.now();
 
-    const telegraphing = dungeon.enemies.filter(e => e.state==='telegraph' && !e.dead);
-    if (!telegraphing.length) {
-      spawnFx(player.px+TS/2, player.py-10, '공격 없음', '#606090', 600);
-      return;
-    }
     if (player.stamina < STA_CTR_COST) {
       toast('⚡ 스태미나 부족!');
       spawnFx(player.px+TS/2, player.py-10, '스태미나 부족', '#9e9e9e', 700);
       return;
     }
     player.stamina -= STA_CTR_COST;
+
+    const telegraphing = dungeon.enemies.filter(e => e.state==='telegraph' && !e.dead);
+    if (!telegraphing.length) {
+      spawnFx(player.px+TS/2, player.py-10, '공격 없음', '#606090', 600);
+      return;
+    }
 
     // 가장 임박한 적 (경과 시간이 가장 긴 것)
     const target = telegraphing.reduce((a,b) =>
