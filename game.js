@@ -73,7 +73,7 @@
 
   // ── DOM 참조 ───────────────────────────────────────────────────
   let $screenEquip, $screenGame, $screenDead;
-  let $equipList, $equipStatus, $btnBare;
+  let $equipList, $equipStatus, $btnBare, $btnContinue;
   let $hpBar, $hpText, $durBar, $durText, $staBar, $staText;
   let $floorLbl, $equipNameHud, $itemSlots;
   let $rpPrompt, $rpBar, $rpCounter, $toast;
@@ -521,7 +521,7 @@
     enemy.state='cooldown'; enemy.nextMoveAt = performance.now()+500;
     hudDirty = true;
 
-    if (player.hp <= 0) { player.hp=0; setGameState('dead'); }
+    if (player.hp <= 0) { player.hp=0; clearSave(); setGameState('dead'); }
   }
 
   // 적 → 목표 방향으로 이동
@@ -574,6 +574,7 @@
     updateCamera();
     toast(`🏰 B${floor}F 도착! HP 25% 회복`);
     hudDirty = true;
+    saveGame();
   }
 
   function restoreEquipStats() {
@@ -873,10 +874,135 @@
   }
 
   // ══════════════════════════════════════════════════════════════
+  // 세이브 / 로드  (서버 DB 우선, 비로그인 시 localStorage 폴백)
+  // ══════════════════════════════════════════════════════════════
+  const SAVE_KEY = 'dungeon7_save';
+
+  function buildSaveData() {
+    if (!dungeon) return null;
+    return {
+      floor,
+      player: {
+        gx: player.gx, gy: player.gy,
+        hp: player.hp, maxHp: player.maxHp,
+        baseAtk: player.baseAtk, baseDef: player.baseDef,
+        moveDelay: player.moveDelay,
+        durability: player.durability, durabilityMax: player.durabilityMax,
+        durBroken: player.durBroken, shieldActive: player.shieldActive,
+        powerBonus: player.powerBonus,
+        xp: player.xp, kills: player.kills,
+        stamina: player.stamina,
+        inventory: player.inventory,
+        equipment: player.equipment,
+      },
+      dungeon: {
+        grid: dungeon.grid,
+        rooms: dungeon.rooms,
+        enemies: dungeon.enemies.map(e => ({
+          defId: e.def.id,
+          gx: e.gx, gy: e.gy,
+          hp: e.hp, maxHp: e.maxHp,
+          atk: e.atk, def_: e.def_,
+          state: (e.state === 'telegraph' || e.state === 'attack') ? 'patrol' : e.state,
+          dead: e.dead,
+          id: e.id,
+        })),
+        items: dungeon.items,
+        revealed: dungeon.revealed.map(row => Array.from(row)),
+      },
+    };
+  }
+
+  function applyLoadData(d) {
+    floor = d.floor;
+    Object.assign(player, d.player);
+    player.px = player.gx * TS;
+    player.py = player.gy * TS;
+    player.lastMoveAt = 0;
+
+    const dd = d.dungeon;
+    dungeon = {
+      grid: dd.grid,
+      rooms: dd.rooms,
+      enemies: dd.enemies.map(e => {
+        const def = EDEFS.find(ed => ed.id === e.defId) || EDEFS[0];
+        return {
+          def, gx: e.gx, gy: e.gy,
+          px: e.gx * TS, py: e.gy * TS,
+          hp: e.hp, maxHp: e.maxHp,
+          atk: e.atk, def_: e.def_,
+          state: e.state,
+          nextMoveAt: performance.now() + Math.random() * 1200,
+          telegraphStart: 0,
+          atkTgx: 0, atkTgy: 0,
+          stunnedUntil: 0,
+          dead: e.dead,
+          id: e.id,
+        };
+      }),
+      items: dd.items.map(item => ({ ...item, def: IDEF[item.type] })),
+      revealed: dd.revealed.map(row => {
+        const arr = new Uint8Array(DW);
+        row.forEach((v, i) => { arr[i] = v; });
+        return arr;
+      }),
+    };
+
+    effects = [];
+    hudDirty = true;
+    $equipNameHud.textContent = player.equipment ? (player.equipment.name || '장비') : '맨손';
+  }
+
+  function saveGame() {
+    const data = buildSaveData();
+    if (!data) return;
+    if (alpToken && platformApi) {
+      fetch(`${platformApi}/api/dungeon/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+        body: JSON.stringify({ data }),
+      }).catch(() => {
+        // 네트워크 오류 시 로컬 폴백
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(_) {}
+      });
+    } else {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(_) {}
+    }
+  }
+
+  async function fetchSave() {
+    if (alpToken && platformApi) {
+      try {
+        const res = await fetch(`${platformApi}/api/dungeon/save`, {
+          headers: { Authorization: `Bearer ${alpToken}` },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          return json.save || null;
+        }
+      } catch(_) {}
+    }
+    // 폴백: localStorage
+    const raw = localStorage.getItem(SAVE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function clearSave() {
+    if (alpToken && platformApi) {
+      fetch(`${platformApi}/api/dungeon/save`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${alpToken}` },
+      }).catch(() => {});
+    }
+    localStorage.removeItem(SAVE_KEY);
+  }
+
+  // ══════════════════════════════════════════════════════════════
   // 게임 시작
   // ══════════════════════════════════════════════════════════════
   function startGame(equip) {
     if (animId) { cancelAnimationFrame(animId); animId=null; }
+    clearSave();
     floor = 1; effects = [];
 
     player.equipment = equip;
@@ -1030,11 +1156,29 @@
     $btnCounter.addEventListener('click', tryCounter);
     $btnCounter.addEventListener('touchstart',(ev)=>{ ev.preventDefault(); tryCounter(); },{ passive:false });
     $btnExit.addEventListener('click', () => {
+      saveGame();
       if (animId) { cancelAnimationFrame(animId); animId = null; }
-      setGameState('equip_select');
+      history.back();
     });
 
-    // 시작 버튼들
+    // 이어하기 버튼: 서버(또는 localStorage)에 세이브가 있으면 표시
+    fetchSave().then(saved => {
+      if (saved) $btnContinue.classList.remove('hidden');
+    });
+    $btnContinue.addEventListener('click', async () => {
+      const saved = await fetchSave();
+      if (!saved) return;
+      try {
+        applyLoadData(saved);
+        updateFog();
+        updateCamera(); camX = camTX; camY = camTY;
+        setGameState('playing');
+      } catch(err) {
+        console.error('세이브 로드 실패', err);
+        clearSave();
+        $btnContinue.classList.add('hidden');
+      }
+    });
     $btnBare.addEventListener('click', ()=>startGame(null));
     $btnRestart.addEventListener('click', ()=>{
       if(animId){ cancelAnimationFrame(animId); animId=null; }
@@ -1074,6 +1218,7 @@
     $equipList    = document.getElementById('equip-list');
     $equipStatus  = document.getElementById('equip-status');
     $btnBare      = document.getElementById('btn-bare');
+    $btnContinue  = document.getElementById('btn-continue');
     $hpBar        = document.getElementById('hp-bar');
     $hpText       = document.getElementById('hp-text');
     $durBar       = document.getElementById('dur-bar');
