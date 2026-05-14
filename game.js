@@ -26,7 +26,7 @@
   const PERF_END     = 390;  // 완벽 반격 종료 (ms) — CTR_START~PERF_END
 
   // 타일 종류
-  const T = { WALL: 0, FLOOR: 1, STAIRS: 2, CHEST: 3 };
+  const T = { WALL: 0, FLOOR: 1, STAIRS: 2, CHEST: 3, PORTAL: 4 };
 
   // ── 장비 슬롯 정의 ─────────────────────────────────────────────
   const SLOT_DEFS = [
@@ -62,7 +62,7 @@
   // ── 게임 상태 변수 ─────────────────────────────────────────────
   let canvas, ctx, animId;
   let gameState = 'equip_select'; // equip_select | playing | dead
-  let floor, dungeon, effects, frameCount;
+  let floor, dungeon, effects, frameCount, isRestFloor;
   let camX, camY, camTX, camTY, lastFrameAt, hudDirty;
 
   const player = {
@@ -89,7 +89,7 @@
   let $hpBar, $hpText, $durBar, $durText, $staBar, $staText;
   let $floorLbl, $equipNameHud, $armorNameHud, $itemSlots;
   let $rpPrompt, $rpBar, $rpCounter, $toast;
-  let $btnCounter, $dpad, $deadStats, $btnRestart, $btnExit;
+  let $btnCounter, $dpad, $deadStats, $btnRestart;
 
   // ── 입력 ───────────────────────────────────────────────────────
   const keys = {};
@@ -212,6 +212,39 @@
     return { grid, rooms, enemies, items, revealed };
   }
 
+  function generateRestFloor() {
+    const grid = [];
+    const revealed = [];
+    for (let y = 0; y < DH; y++) {
+      grid.push(new Array(DW).fill(T.WALL));
+      revealed.push(new Uint8Array(DW).fill(1)); // 휴식층은 안개 없이 전체 공개
+    }
+
+    // 넓은 방 (22×14, 격자 중앙)
+    const rw = 22, rh = 14;
+    const rx = Math.floor((DW - rw) / 2);
+    const ry = Math.floor((DH - rh) / 2);
+    for (let y = ry; y < ry + rh; y++)
+      for (let x = rx; x < rx + rw; x++)
+        grid[y][x] = T.FLOOR;
+
+    // 포털 (다음 층 입구) — 상단 중앙
+    const portalX = Math.floor(DW / 2);
+    const portalY = ry + 1;
+    grid[portalY][portalX] = T.PORTAL;
+
+    // 플레이어 시작 — 하단 중앙
+    player.gx = Math.floor(DW / 2);
+    player.gy = ry + rh - 2;
+    player.px = player.gx * TS;
+    player.py = player.gy * TS;
+
+    return {
+      grid, rooms: [{ x: rx, y: ry, w: rw, h: rh, cx: Math.floor(DW / 2), cy: Math.floor(DH / 2) }],
+      enemies: [], items: [], revealed, isRest: true,
+    };
+  }
+
   function makeEnemy(def, gx, gy, scale) {
     const hp = Math.round(def.hp * scale);
     return {
@@ -291,7 +324,8 @@
     const ii = dungeon.items.findIndex(it => it.gx===nx && it.gy===ny);
     if (ii !== -1) { pickupItem(dungeon.items[ii]); dungeon.items.splice(ii,1); }
 
-    if (tile === T.STAIRS) { enterNextFloor(); return; }
+    if (tile === T.STAIRS) { enterRestFloor(); return; }
+    if (tile === T.PORTAL) { enterCombatFloor(); return; }
     if (tile === T.CHEST)  { openChest(nx, ny); }
   }
 
@@ -597,17 +631,25 @@
   // ══════════════════════════════════════════════════════════════
   // 층 이동 / 게임 흐름
   // ══════════════════════════════════════════════════════════════
-  function enterNextFloor() {
-    floor++;
+  function enterRestFloor() {
     player.powerBonus = 0;
-    // 층 이동 시 HP 25% 회복
     player.hp = Math.min(player.maxHp, player.hp + Math.round(player.maxHp * 0.25));
+    isRestFloor = true;
+    dungeon = generateRestFloor();
+    camX = camTX = 0; camY = camTY = 0; updateCamera(); camX = camTX; camY = camTY;
+    toast(`⛺ 휴식층 도착! HP 25% 회복 · 포털로 다음 층 이동`);
+    hudDirty = true;
+    saveGame(); // 휴식층 진입 시 저장
+  }
+
+  function enterCombatFloor() {
+    floor++;
+    isRestFloor = false;
     dungeon = generateDungeon(floor);
     updateFog();
     updateCamera();
-    toast(`🏰 B${floor}F 도착! HP 25% 회복`);
+    toast(`🏰 B${floor}F 도착!`);
     hudDirty = true;
-    saveGame();
   }
 
   function calcArmorTotals() {
@@ -769,20 +811,42 @@
         }
 
         const t = dungeon.grid[ty][tx];
-        if (t === T.WALL) {
-          ctx.fillStyle='#0d0d1a'; ctx.fillRect(sx,sy,TS,TS);
-          ctx.fillStyle='#060610'; ctx.fillRect(sx+3,sy+3,TS-6,TS-6);
+        if (dungeon.isRest) {
+          // ── 휴식층 타일 ──
+          if (t === T.WALL) {
+            ctx.fillStyle='#1a1208'; ctx.fillRect(sx,sy,TS,TS);
+            ctx.fillStyle='#120d05'; ctx.fillRect(sx+3,sy+3,TS-6,TS-6);
+          } else {
+            ctx.fillStyle='#1e1710'; ctx.fillRect(sx,sy,TS,TS);
+            ctx.strokeStyle='#2a1f10'; ctx.lineWidth=0.5;
+            ctx.strokeRect(sx+0.5,sy+0.5,TS-1,TS-1);
+            if (t === T.PORTAL) {
+              const pulse = 0.6 + Math.sin(frameCount * 0.07) * 0.4;
+              ctx.fillStyle = `rgba(100,80,220,${pulse * 0.45})`;
+              ctx.fillRect(sx, sy, TS, TS);
+              ctx.font = '20px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+              ctx.globalAlpha = 0.7 + Math.sin(frameCount * 0.07) * 0.3;
+              ctx.fillText('🌀', sx + TS/2, sy + TS/2 + 1);
+              ctx.globalAlpha = 1;
+            }
+          }
         } else {
-          ctx.fillStyle='#161626'; ctx.fillRect(sx,sy,TS,TS);
-          ctx.strokeStyle='#0e0e22'; ctx.lineWidth=0.5;
-          ctx.strokeRect(sx+0.5,sy+0.5,TS-1,TS-1);
-          if (t===T.STAIRS) {
-            ctx.fillStyle='#f5c518';
-            ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.fillText('▼',sx+TS/2,sy+TS/2+1);
-          } else if (t===T.CHEST) {
-            ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.fillText('📦',sx+TS/2,sy+TS/2+1);
+          // ── 일반 던전 타일 ──
+          if (t === T.WALL) {
+            ctx.fillStyle='#0d0d1a'; ctx.fillRect(sx,sy,TS,TS);
+            ctx.fillStyle='#060610'; ctx.fillRect(sx+3,sy+3,TS-6,TS-6);
+          } else {
+            ctx.fillStyle='#161626'; ctx.fillRect(sx,sy,TS,TS);
+            ctx.strokeStyle='#0e0e22'; ctx.lineWidth=0.5;
+            ctx.strokeRect(sx+0.5,sy+0.5,TS-1,TS-1);
+            if (t===T.STAIRS) {
+              ctx.fillStyle='#f5c518';
+              ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+              ctx.fillText('▼',sx+TS/2,sy+TS/2+1);
+            } else if (t===T.CHEST) {
+              ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+              ctx.fillText('📦',sx+TS/2,sy+TS/2+1);
+            }
           }
         }
       }
@@ -878,6 +942,24 @@
       ctx.globalAlpha=1;
     }
 
+    // ── 휴식층 모닥불 + 포털 안내 ───────────────────────────
+    if (dungeon.isRest) {
+      const cx = Math.floor(DW / 2) * TS - camX;
+      const cy = Math.floor(DH / 2) * TS - camY;
+      // 모닥불 (방 중앙)
+      ctx.font = '22px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const fireAlpha = 0.8 + Math.sin(frameCount * 0.12) * 0.2;
+      ctx.globalAlpha = fireAlpha;
+      ctx.fillText('🔥', cx + TS / 2, cy + TS / 2);
+      ctx.globalAlpha = 1;
+      // 포털 위 안내 텍스트
+      const portalSx = Math.floor(DW / 2) * TS - camX;
+      const portalSy = (Math.floor((DH - 14) / 2) + 1) * TS - camY;
+      ctx.fillStyle = 'rgba(180,160,255,0.85)';
+      ctx.font = '9px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(`B${floor + 1}F →`, portalSx + TS / 2, portalSy - 2);
+    }
+
     // ── 조작 힌트 (좌하단) ───────────────────────────────────
     ctx.fillStyle='rgba(80,80,120,0.55)';
     ctx.font='10px monospace'; ctx.textAlign='left'; ctx.textBaseline='bottom';
@@ -911,7 +993,7 @@
       $durText.textContent = '없음';
     }
 
-    $floorLbl.textContent = `B${floor}F`;
+    $floorLbl.textContent = isRestFloor ? '⛺ 휴식' : `B${floor}F`;
 
     // 스태미나 바
     const staPct = player.stamina / STA_MAX * 100;
@@ -1033,6 +1115,7 @@
 
     if (s === 'dead') {
       if (animId) { cancelAnimationFrame(animId); animId=null; }
+      stopAutoSave();
       $deadStats.textContent =
         `B${floor}F 에서 전투 불능\n처치 ${player.kills}마리  ·  경험치 ${player.xp}`;
     }
@@ -1043,7 +1126,25 @@
         lastFrameAt = 0; frameCount = 0;
         animId = requestAnimationFrame(loop);
       }
+      startAutoSave();
     }
+    if (s === 'equip_select') {
+      stopAutoSave();
+    }
+  }
+
+  let _autoSaveTimer = null;
+  const AUTO_SAVE_INTERVAL_MS = 30_000;
+
+  function startAutoSave() {
+    if (_autoSaveTimer) return;
+    _autoSaveTimer = setInterval(() => {
+      if (gameState === 'playing') saveGame();
+    }, AUTO_SAVE_INTERVAL_MS);
+  }
+
+  function stopAutoSave() {
+    if (_autoSaveTimer) { clearInterval(_autoSaveTimer); _autoSaveTimer = null; }
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -1055,6 +1156,7 @@
     if (!dungeon) return null;
     return {
       floor,
+      isRestFloor: !!isRestFloor,
       player: {
         gx: player.gx, gy: player.gy,
         hp: player.hp, maxHp: player.maxHp,
@@ -1120,7 +1222,9 @@
         row.forEach((v, i) => { arr[i] = v; });
         return arr;
       }),
+      isRest: !!d.isRestFloor,
     };
+    isRestFloor = !!d.isRestFloor;
 
     effects = [];
     hudDirty = true;
@@ -1205,7 +1309,7 @@
   function startGame(equipList, slotEquips) {
     if (animId) { cancelAnimationFrame(animId); animId=null; }
     clearSave();
-    floor = 1; effects = [];
+    floor = 1; isRestFloor = false; effects = [];
 
     // 기본 스탯 초기화
     player.equipment     = null;
@@ -1461,22 +1565,6 @@
     // 반격 버튼
     $btnCounter.addEventListener('click', tryCounter);
     $btnCounter.addEventListener('touchstart',(ev)=>{ ev.preventDefault(); tryCounter(); },{ passive:false });
-    $btnExit.addEventListener('click', async () => {
-      if (animId) { cancelAnimationFrame(animId); animId = null; }
-      // exit 엔드포인트: 내구도 동기화 + 세이브 삭제 원자 처리
-      const _exitSave = buildSaveData();
-      localStorage.removeItem(SAVE_KEY);
-      if (_exitSave && alpToken && platformApi) {
-        try {
-          await fetch(`${platformApi}/api/dungeon/exit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
-            body: JSON.stringify({ data: _exitSave }),
-          });
-        } catch(_) {}
-      }
-      history.back();
-    });
 
     // 이어하기 버튼: 서버(또는 localStorage)에 세이브가 있으면 표시
     fetchSave().then(saved => {
@@ -1555,7 +1643,6 @@
     $dpad         = document.querySelector('.dpad');
     $deadStats    = document.getElementById('dead-stats');
     $btnRestart   = document.getElementById('btn-restart');
-    $btnExit      = document.getElementById('btn-exit');
 
     canvas = document.getElementById('canvas');
     ctx    = canvas.getContext('2d');
