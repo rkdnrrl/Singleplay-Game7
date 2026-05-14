@@ -1234,6 +1234,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
           body: JSON.stringify({ data }),
+          keepalive: true,
         });
       } catch(_) {}
     }
