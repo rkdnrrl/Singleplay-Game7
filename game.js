@@ -1727,9 +1727,10 @@
   }
 
   async function loadGameData() {
+    const base = new URL('.', window.location.href).href;
     const [enRes, itRes] = await Promise.all([
-      fetch('/enemies.json'),
-      fetch('/items.json'),
+      fetch(base + 'enemies.json'),
+      fetch(base + 'items.json'),
     ]);
     const enData = await enRes.json();
     const itData = await itRes.json();
