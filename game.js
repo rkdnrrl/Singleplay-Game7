@@ -43,6 +43,14 @@
   let EDEFS = [];
   let IDEF  = {};
 
+  // ── 모듈 시스템 ───────────────────────────────────────────────
+  // Offensive module types (durability decreases on attack)
+  const OFFENSIVE_MODULE_TYPES = new Set(['barrel','scope','grip','muzzle','gem']);
+  // Defensive module types (durability decreases on damage taken)
+  const DEFENSIVE_MODULE_TYPES = new Set(['padding','reinforcement','visor','lining','sole','enchant']);
+  // equippedTo → [module, ...] map (populated on load)
+  let modulesByEquip = {};
+
   // ── 게임 상태 변수 ─────────────────────────────────────────────
   let canvas, ctx, animId;
   let gameState = 'equip_select'; // equip_select | playing | dead
@@ -65,6 +73,10 @@
     powerBonus: 0,
     xp: 0, kills: 0,
     stamina: STA_MAX,
+    // Module durability tracking: moduleId → current durability
+    moduleDurabilities: {},
+    // Synergy-derived decay multiplier (1.0 = normal)
+    moduleDecayMul: 1.0,
   };
 
   // ── DOM 참조 ───────────────────────────────────────────────────
@@ -325,6 +337,7 @@
     spawnFx(enemy.px + TS/2, enemy.py, `-${dmg}`, '#ff5722');
     if (enemy.hp <= 0) killEnemy(enemy);
     damageWeaponDur();
+    damageOffensiveModules();
     hudDirty = true;
   }
 
@@ -459,6 +472,7 @@
 
     if (target.hp <= 0) killEnemy(target);
     damageWeaponDur();
+    damageOffensiveModules();
     hudDirty = true;
   }
 
@@ -590,6 +604,7 @@
     // 피격 부위 방어구 내구도 감소
     const hitSlot = pickHitSlot();
     if (hitSlot) damageArmorSlot(hitSlot);
+    damageDefensiveModules();
 
     enemy.state='cooldown'; enemy.nextMoveAt = performance.now()+500;
     if (enemy.def.pattern === 'coward') retreatFrom(enemy, player.gx, player.gy);
@@ -743,6 +758,59 @@
     return { atk, def, spd, hp };
   }
 
+  // Sum stat bonuses from modules on a given equipment ID (only if durability > 0)
+  function sumModuleStatsForEquip(equipId) {
+    const mods = modulesByEquip[String(equipId)] || [];
+    let atk = 0, def = 0, spd = 0, hp = 0;
+    for (const mod of mods) {
+      const cur = player.moduleDurabilities[mod.id];
+      if (cur != null && cur <= 0) continue; // broken module
+      const s = mod.stats || {};
+      atk += (s.attackBonus  || 0);
+      def += (s.defenseBonus || 0);
+      spd += (s.speedBonus   || 0);
+      hp  += (s.hpBonus      || 0);
+    }
+    return { atk, def, spd, hp };
+  }
+
+  // Recompute all player combat stats from scratch (armor + weapon + modules)
+  function _recomputePlayerStats() {
+    let atkSum = 0, defSum = 0, spdSum = 0, hpSum = 0;
+    for (const wrapper of Object.values(player.equippedSlots || {})) {
+      if (!wrapper || (wrapper.curDur != null && wrapper.curDur <= 0)) continue;
+      const eq = wrapper.equip || wrapper;
+      const s  = eq.stats || {};
+      atkSum += (s.attackBonus  || 0);
+      defSum += (s.defenseBonus || 0);
+      spdSum += (s.speedBonus   || 0);
+      hpSum  += (s.hpBonus      || 0);
+      const eid = eq?.id;
+      if (eid) {
+        const ms = sumModuleStatsForEquip(eid);
+        atkSum += ms.atk; defSum += ms.def; spdSum += ms.spd; hpSum += ms.hp;
+      }
+    }
+    if (player.equipment) {
+      const ws  = player.equipment.stats || {};
+      const wid = player.equipment.id;
+      const wms = wid ? sumModuleStatsForEquip(wid) : { atk:0, def:0, spd:0, hp:0 };
+      const broken = player.durBroken;
+      player.baseAtk = 5 + atkSum + (broken ? 0 : (ws.attackBonus || 0)) + (broken ? 0 : wms.atk);
+      player.baseDef = defSum + (broken ? Math.floor((ws.defenseBonus||0)/2) : (ws.defenseBonus||0)) +
+                       (broken ? 0 : wms.def);
+      player.moveDelay = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, spdSum + (ws.speedBonus||0) + wms.spd)));
+      hpSum += wms.hp;
+    } else {
+      player.baseAtk   = 5 + atkSum;
+      player.baseDef   = defSum;
+      player.moveDelay = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, spdSum)));
+    }
+    const newMaxHp = Math.max(50, 100 + player.baseDef * 5 + hpSum);
+    if (newMaxHp < player.maxHp) player.hp = Math.min(player.hp, newMaxHp);
+    player.maxHp = newMaxHp;
+  }
+
   function deleteEquipFromServer(id) {
     if (!alpToken || !platformApi || !id) return;
     fetch(`${platformApi}/api/craft/equipment/${id}`, {
@@ -798,6 +866,42 @@
     const activeEq = player.inventory.find(it => it.type === 'equip' && it.active);
     if (activeEq) activeEq.curDur = player.durability;
     if (player.durability === 0) destroyWeapon();
+  }
+
+  function damageOffensiveModules() {
+    _damageModulesOfTypes(OFFENSIVE_MODULE_TYPES);
+  }
+
+  function damageDefensiveModules() {
+    _damageModulesOfTypes(DEFENSIVE_MODULE_TYPES);
+  }
+
+  function _damageModulesOfTypes(typeSet) {
+    const decay = Math.max(1, Math.round(player.moduleDecayMul));
+    // Iterate all equipped equipment IDs
+    const equipIds = new Set();
+    if (player.equipment?.id) equipIds.add(String(player.equipment.id));
+    for (const wrapper of Object.values(player.equippedSlots || {})) {
+      const eid = wrapper?.equip?.id ?? wrapper?.id;
+      if (eid) equipIds.add(String(eid));
+    }
+    for (const eid of equipIds) {
+      const mods = modulesByEquip[eid] || [];
+      for (const mod of mods) {
+        if (!typeSet.has(mod.moduleType)) continue;
+        const cur = player.moduleDurabilities[mod.id];
+        if (cur == null || cur <= 0) continue;
+        const next = Math.max(0, cur - decay);
+        player.moduleDurabilities[mod.id] = next;
+        if (next === 0 && cur > 0) {
+          toast(`🔩 ${mod.name} 모듈 파손!`);
+          spawnFx(player.px + TS/2, player.py - 10, `${mod.name} 파손`, '#ff9800', 1000);
+          // Recalculate player stats without the broken module
+          _recomputePlayerStats();
+          hudDirty = true;
+        }
+      }
+    }
   }
 
   function destroyWeapon() {
@@ -1241,6 +1345,8 @@
         inventory: player.inventory,
         equipment: player.equipment,
         equippedSlots: player.equippedSlots || {},
+        moduleDurabilities: player.moduleDurabilities || {},
+        moduleDecayMul: player.moduleDecayMul || 1.0,
       },
       dungeon: {
         grid: dungeon.grid,
@@ -1310,6 +1416,18 @@
         player.equippedSlots[slotId] = { equip: val, curDur: maxDur, maxDur };
       }
     }
+    // 모듈 내구도 복원
+    player.moduleDurabilities = d.player.moduleDurabilities || {};
+    player.moduleDecayMul = d.player.moduleDecayMul || 1.0;
+    // 저장에 없던 모듈은 현재 DB 값으로 초기화
+    for (const mods of Object.values(modulesByEquip)) {
+      for (const mod of mods) {
+        if (player.moduleDurabilities[mod.id] == null) {
+          player.moduleDurabilities[mod.id] = mod.durability;
+        }
+      }
+    }
+
     $equipNameHud.textContent = player.equipment ? (player.equipment.name || '장비') : '맨손';
     updateArmorHud();
   }
@@ -1380,7 +1498,16 @@
     player.xp=0; player.kills=0;
     player.stamina = STA_MAX;
     player.lastMoveAt=0;
+    player.moduleDurabilities = {};
+    player.moduleDecayMul     = 1.0;
     $equipNameHud.textContent = '맨손';
+
+    // 모듈 내구도 초기화 (현재 DB 값으로)
+    for (const mods of Object.values(modulesByEquip)) {
+      for (const mod of mods) {
+        player.moduleDurabilities[mod.id] = mod.durability;
+      }
+    }
 
     // 선택된 방어구를 내구도 래퍼로 감싸기
     for (const [slotId, eq] of Object.entries(slotEquips || {})) {
@@ -1398,10 +1525,17 @@
     for (const wrapper of Object.values(player.equippedSlots)) {
       if (!wrapper) continue;
       const s = wrapper.equip.stats || {};
+      const eid = wrapper.equip?.id;
       player.baseAtk += (s.attackBonus  || 0);
       player.baseDef += (s.defenseBonus || 0);
       armorSpd       += (s.speedBonus   || 0);
       totalHp        += (s.hpBonus      || 0);
+      // 방어구 슬롯 모듈 스탯
+      if (eid) {
+        const ms = sumModuleStatsForEquip(eid);
+        player.baseAtk += ms.atk; player.baseDef += ms.def;
+        armorSpd += ms.spd; totalHp += ms.hp;
+      }
     }
     updateArmorHud();
 
@@ -1421,11 +1555,14 @@
       firstEquip.active = true;
       player.equipment = firstEquip.equip;
       const s = firstEquip.equip.stats || {};
-      player.baseAtk      += (s.attackBonus  || 0);
-      player.baseDef      += (s.defenseBonus || 0);
-      player.moveDelay     = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, armorSpd + (s.speedBonus || 0))));
+      const wid = firstEquip.equip?.id;
+      const wms = wid ? sumModuleStatsForEquip(wid) : { atk:0, def:0, spd:0, hp:0 };
+      player.baseAtk      += (s.attackBonus  || 0) + wms.atk;
+      player.baseDef      += (s.defenseBonus || 0) + wms.def;
+      player.moveDelay     = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, armorSpd + (s.speedBonus || 0) + wms.spd)));
       player.durabilityMax = firstEquip.maxDur;
       player.durability    = firstEquip.curDur;
+      totalHp += wms.hp;
       $equipNameHud.textContent = firstEquip.equip.name || '장비';
     }
 
@@ -1450,12 +1587,30 @@
     }
     try {
       $equipStatus.textContent = '장비 불러오는 중…';
-      const res = await fetch(`${platformApi}/api/craft/equipment?limit=40`, {
-        headers: { Authorization:`Bearer ${alpToken}` },
-      });
-      if (!res.ok) throw new Error(res.status);
-      const data = await res.json();
+      const [eqRes, modRes] = await Promise.all([
+        fetch(`${platformApi}/api/craft/equipment?limit=40`, {
+          headers: { Authorization:`Bearer ${alpToken}` },
+        }),
+        fetch(`${platformApi}/api/modules`, {
+          headers: { Authorization:`Bearer ${alpToken}` },
+        }).catch(() => null),
+      ]);
+      if (!eqRes.ok) throw new Error(eqRes.status);
+      const data = await eqRes.json();
       const list = (data.equipment || []).filter(e => e && e.stats);
+
+      // Build modulesByEquip map
+      modulesByEquip = {};
+      if (modRes && modRes.ok) {
+        const modData = await modRes.json();
+        for (const mod of (modData.modules || [])) {
+          if (!mod.equippedTo) continue;
+          const key = String(mod.equippedTo);
+          if (!modulesByEquip[key]) modulesByEquip[key] = [];
+          modulesByEquip[key].push(mod);
+        }
+      }
+
       renderEquipList(list);
       const total = list.length;
       $equipStatus.textContent = total
