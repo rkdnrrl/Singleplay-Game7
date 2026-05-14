@@ -1294,8 +1294,12 @@
     // 선택된 방어구를 내구도 래퍼로 감싸기
     for (const [slotId, eq] of Object.entries(slotEquips || {})) {
       if (!eq) continue;
-      const maxDur = Math.max(15, (eq.stats?.durabilityMax || 30));
-      player.equippedSlots[slotId] = { equip: eq, curDur: maxDur, maxDur };
+      const st = eq.stats || {};
+      const maxDur = Math.max(15, (st.durabilityMax || 30));
+      const curDur = st.durability != null && Number.isFinite(Number(st.durability))
+        ? Math.min(Number(st.durability), maxDur)
+        : maxDur;
+      player.equippedSlots[slotId] = { equip: eq, curDur, maxDur };
     }
 
     // 장비 슬롯 스탯 합산 적용
@@ -1314,8 +1318,11 @@
     const eqArr = Array.isArray(equipList) ? equipList : (equipList ? [equipList] : []);
     for (const eq of eqArr) {
       const s = eq.stats || {};
-      const maxDur = s.durabilityMax || eq.durability || 100;
-      player.inventory.push({ type:'equip', equip:eq, curDur: eq.durability ?? maxDur, maxDur, active:false });
+      const maxDur = s.durabilityMax || 100;
+      const curDur = s.durability != null && Number.isFinite(Number(s.durability))
+        ? Math.min(Number(s.durability), maxDur)
+        : maxDur;
+      player.inventory.push({ type:'equip', equip:eq, curDur, maxDur, active:false });
     }
     // 첫 번째 무기 자동 장착
     const firstEquip = player.inventory.find(it => it.type === 'equip');
