@@ -15,9 +15,9 @@
 
   // 스태미나 상수
   const STA_MAX      = 100;
-  const STA_ATK_COST = 15;   // 공격 시 소모
-  const STA_CTR_COST = 20;   // 반격 시 소모
-  const STA_REGEN    = 8;    // 초당 회복량
+  const STA_ATK_COST = 10;   // 공격 시 소모
+  const STA_CTR_COST = 13;   // 반격 시 소모
+  const STA_REGEN    = 15;   // 초당 회복량
 
   const MOVE_BASE_MS = 220;  // 기본 이동 쿨다운 (ms)
   const TELEGRAPH_MS = 700;  // 적 공격 예고 시간 (ms)
@@ -39,25 +39,9 @@
     { id: 'accessory', emoji: '💍', label: '악세서리', weapon: false },
   ];
 
-  // ── 적 정의 ────────────────────────────────────────────────────
-  const EDEFS = [
-    { id:'slime',    name:'슬라임',    emoji:'🟢', hp:12,  atk:5,  def:0,  mvMs:700,  xp:5,  minF:1,  maxF:4  },
-    { id:'goblin',   name:'고블린',    emoji:'👺', hp:22,  atk:9,  def:1,  mvMs:540,  xp:10, minF:1,  maxF:7  },
-    { id:'skeleton', name:'해골',      emoji:'💀', hp:30,  atk:13, def:3,  mvMs:740,  xp:16, minF:3,  maxF:99 },
-    { id:'orc',      name:'오크',      emoji:'👹', hp:48,  atk:20, def:6,  mvMs:840,  xp:26, minF:5,  maxF:99 },
-    { id:'demon',    name:'악마',      emoji:'😈', hp:65,  atk:28, def:9,  mvMs:600,  xp:40, minF:8,  maxF:99 },
-    // 보스 (5층마다)
-    { id:'bslime', name:'대왕슬라임', emoji:'💚', hp:90,  atk:16, def:5,  mvMs:900,  xp:60,  minF:5,  maxF:5,  isBoss:true },
-    { id:'bdemon', name:'암흑군주',   emoji:'👿', hp:160, atk:35, def:14, mvMs:1050, xp:120, minF:10, maxF:10, isBoss:true },
-  ];
-
-  // ── 아이템 정의 ────────────────────────────────────────────────
-  const IDEF = {
-    potion: { name:'회복 포션',     emoji:'🧪', desc:'HP 30% 회복',       action:'heal'   },
-    repair: { name:'수리 키트',     emoji:'🔧', desc:'내구도 +20 회복',    action:'repair' },
-    power:  { name:'힘의 결정',     emoji:'💠', desc:'이번 층 공격력 +8',  action:'power'  },
-    shield: { name:'방어 두루마리', emoji:'📜', desc:'다음 피해 1회 무효', action:'shield' },
-  };
+  // ── 적/아이템 정의 (enemies.json / items.json 에서 로드) ──────
+  let EDEFS = [];
+  let IDEF  = {};
 
   // ── 게임 상태 변수 ─────────────────────────────────────────────
   let canvas, ctx, animId;
@@ -167,7 +151,7 @@
       const r = rooms[i];
       if (grid[r.cy][r.cx] === T.STAIRS) continue;
 
-      const count = Math.min(6, 2 + Math.floor(Math.random()*3) + Math.floor(f/3));
+      const count = Math.min(10, 4 + Math.floor(Math.random()*4) + Math.floor(f/3));
       for (let n = 0; n < count && valid.length; n++) {
         const def = valid[Math.floor(Math.random() * valid.length)];
         let ex, ey, tries = 0;
@@ -522,28 +506,64 @@
         continue;
       }
 
+      // ── regen 틱 ─────────────────────────────────────────────
+      if (e.def.pattern === 'regen') {
+        if (!e.regenAt) e.regenAt = now + 3000;
+        if (now >= e.regenAt && e.hp < e.maxHp) {
+          e.hp = Math.min(e.maxHp, e.hp + 2);
+          spawnFx(e.px + TS/2, e.py - 8, '+2', '#4caf50', 600);
+          hudDirty = true;
+          e.regenAt = now + 3000;
+        }
+      }
+
       // ── 순찰 / 추격 ──────────────────────────────────────────
       if (now < e.nextMoveAt) continue;
 
-      const dist = Math.abs(e.gx-player.gx) + Math.abs(e.gy-player.gy);
+      const dist       = Math.abs(e.gx - player.gx) + Math.abs(e.gy - player.gy);
+      const pattern    = e.def.pattern || 'melee';
+      const chaseRange = pattern === 'rush' ? 14 : 8;
+      const visible    = dungeon.revealed[e.gy]?.[e.gx];
 
+      // ── 원거리 패턴 ─────────────────────────────────────────
+      if (pattern === 'ranged' && (e.def.range || 1) > 1) {
+        if (checkRangedLine(e)) {
+          // 사거리 내 일직선 → 원거리 공격 예고
+          e.state          = 'telegraph';
+          e.telegraphStart = now;
+          e.atkTgx         = player.gx;
+          e.atkTgy         = player.gy;
+          e.rangedAtk      = true;
+          anyTelegraph     = true;
+        } else if (dist <= chaseRange && visible) {
+          moveToward(e, player.gx, player.gy);
+          e.state      = 'chase';
+          e.nextMoveAt = now + e.def.mvMs;
+        } else {
+          moveRandom(e);
+          e.state      = 'patrol';
+          e.nextMoveAt = now + e.def.mvMs * 1.6;
+        }
+        continue;
+      }
+
+      // ── 근접 / 돌진 / 겁쟁이 ────────────────────────────────
       if (dist === 1) {
-        // 인접 → 공격 예고 시작
         e.state          = 'telegraph';
         e.telegraphStart = now;
         e.atkTgx         = player.gx;
         e.atkTgy         = player.gy;
+        e.rangedAtk      = false;
         anyTelegraph     = true;
-      } else if (dist <= 8 && dungeon.revealed[e.gy]?.[e.gx]) {
-        // 추격
+      } else if (dist <= chaseRange && visible) {
+        const chaseMs = pattern === 'rush' ? Math.round(e.def.mvMs * 0.65) : e.def.mvMs;
         moveToward(e, player.gx, player.gy);
-        e.state       = 'chase';
-        e.nextMoveAt  = now + e.def.mvMs;
+        e.state      = 'chase';
+        e.nextMoveAt = now + chaseMs;
       } else {
-        // 순찰
         moveRandom(e);
-        e.state       = 'patrol';
-        e.nextMoveAt  = now + e.def.mvMs * 1.6;
+        e.state      = 'patrol';
+        e.nextMoveAt = now + e.def.mvMs * 1.6;
       }
     }
 
@@ -572,6 +592,7 @@
     if (hitSlot) damageArmorSlot(hitSlot);
 
     enemy.state='cooldown'; enemy.nextMoveAt = performance.now()+500;
+    if (enemy.def.pattern === 'coward') retreatFrom(enemy, player.gx, player.gy);
     hudDirty = true;
 
     if (player.hp <= 0) {
@@ -617,6 +638,44 @@
       if (dungeon.enemies.some(o => !o.dead && o!==e && o.gx===nx && o.gy===ny)) continue;
       if (nx===player.gx && ny===player.gy) continue;
       e.gx=nx; e.gy=ny; return;
+    }
+  }
+
+  // 일직선 시야 체크 (벽 없이 가로/세로로 연결되는지)
+  function hasLosCardinal(x0, y0, x1, y1) {
+    if (x0 !== x1 && y0 !== y1) return false;
+    const sx = Math.sign(x1 - x0), sy = Math.sign(y1 - y0);
+    let x = x0 + sx, y = y0 + sy;
+    while (x !== x1 || y !== y1) {
+      if (dungeon.grid[y]?.[x] === T.WALL) return false;
+      x += sx; y += sy;
+    }
+    return true;
+  }
+
+  // 원거리 사거리 내 일직선 체크
+  function checkRangedLine(e) {
+    const dx = player.gx - e.gx, dy = player.gy - e.gy;
+    const dist = Math.abs(dx) + Math.abs(dy);
+    const range = e.def.range || 1;
+    if (!((dx === 0 || dy === 0) && dist > 0 && dist <= range)) return false;
+    return hasLosCardinal(e.gx, e.gy, player.gx, player.gy);
+  }
+
+  // 겁쟁이 패턴: 공격 후 플레이어로부터 도망
+  function retreatFrom(e, fromX, fromY) {
+    const dx = Math.sign(e.gx - fromX), dy = Math.sign(e.gy - fromY);
+    const opts = [];
+    if (dx !== 0) opts.push([dx, 0]);
+    if (dy !== 0) opts.push([0, dy]);
+    if (dx === 0) opts.push([1, 0], [-1, 0]);
+    if (dy === 0) opts.push([0, 1], [0, -1]);
+    for (const [ox, oy] of opts) {
+      const nx = e.gx + ox, ny = e.gy + oy;
+      if (!inBounds(nx, ny) || dungeon.grid[ny][nx] === T.WALL) continue;
+      if (dungeon.enemies.some(o => !o.dead && o !== e && o.gx === nx && o.gy === ny)) continue;
+      if (nx === player.gx && ny === player.gy) continue;
+      e.gx = nx; e.gy = ny; return;
     }
   }
 
@@ -885,6 +944,19 @@
     for (const e of dungeon.enemies) {
       if (e.dead || e.state!=='telegraph') continue;
       const pct = Math.min(1,(now-e.telegraphStart)/TELEGRAPH_MS);
+
+      // 원거리: 공격 라인 전체 하이라이트
+      if (e.rangedAtk) {
+        const sdx = Math.sign(e.atkTgx - e.gx), sdy = Math.sign(e.atkTgy - e.gy);
+        let lx = e.gx + sdx, ly = e.gy + sdy;
+        while (inBounds(lx, ly)) {
+          const px = lx*TS-camX, py = ly*TS-camY;
+          ctx.fillStyle = `rgba(255,140,0,${0.10+pct*0.20})`;
+          ctx.fillRect(px, py, TS, TS);
+          if (lx === e.atkTgx && ly === e.atkTgy) break;
+          lx += sdx; ly += sdy;
+        }
+      }
 
       // 공격 예정 칸 붉게 표시
       const sx=e.atkTgx*TS-camX, sy=e.atkTgy*TS-camY;
@@ -1654,5 +1726,18 @@
     setGameState('equip_select');
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  async function loadGameData() {
+    const [enRes, itRes] = await Promise.all([
+      fetch('/enemies.json'),
+      fetch('/items.json'),
+    ]);
+    const enData = await enRes.json();
+    const itData = await itRes.json();
+    EDEFS = enData.enemies;
+    IDEF  = itData.items;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadGameData().then(init);
+  });
 })();

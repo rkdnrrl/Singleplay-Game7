@@ -1,0 +1,8 @@
+{
+  "items": {
+    "potion": { "name": "회복 포션",     "emoji": "🧪", "desc": "HP 30% 회복",        "action": "heal"   },
+    "repair": { "name": "수리 키트",     "emoji": "🔧", "desc": "내구도 +20 회복",     "action": "repair" },
+    "power":  { "name": "힘의 결정",     "emoji": "💠", "desc": "이번 층 공격력 +8",   "action": "power"  },
+    "shield": { "name": "방어 두루마리", "emoji": "📜", "desc": "다음 피해 1회 무효",  "action": "shield" }
+  }
+}
