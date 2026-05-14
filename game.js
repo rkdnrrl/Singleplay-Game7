@@ -48,6 +48,8 @@
   const OFFENSIVE_MODULE_TYPES = new Set(['barrel','scope','grip','muzzle','gem']);
   // Defensive module types (durability decreases on damage taken)
   const DEFENSIVE_MODULE_TYPES = new Set(['padding','reinforcement','visor','lining','sole','enchant']);
+  // Buffer module types (absorb equipment durability damage instead of the equipment)
+  const BUFFER_MODULE_TYPES = new Set(['buffer']);
   // equippedTo → [module, ...] map (populated on load)
   let modulesByEquip = {};
 
@@ -837,6 +839,21 @@
   function damageArmorSlot(slotId) {
     const wrapper = player.equippedSlots[slotId];
     if (!wrapper || wrapper.curDur <= 0) return;
+    // 완충재 모듈이 있으면 방어구 내구도 대신 모듈 내구도 감소
+    const armorId = String(wrapper?.equip?.id ?? wrapper?.id ?? '');
+    const bufMod = (modulesByEquip[armorId] || [])
+      .find(m => BUFFER_MODULE_TYPES.has(m.moduleType) && (player.moduleDurabilities[m.id] || 0) > 0);
+    if (bufMod) {
+      const next = Math.max(0, (player.moduleDurabilities[bufMod.id] || 0) - 1);
+      player.moduleDurabilities[bufMod.id] = next;
+      if (next === 0) {
+        toast(`🛡️ ${bufMod.name} 소진!`);
+        spawnFx(player.px + TS/2, player.py - 10, `완충재 소진!`, '#ff9800', 1000);
+        _recomputePlayerStats();
+        hudDirty = true;
+      }
+      return;
+    }
     wrapper.curDur = Math.max(0, wrapper.curDur - 1);
     const slotDef = SLOT_DEFS.find(d => d.id === slotId);
     const label = slotDef ? slotDef.label : slotId;
@@ -862,6 +879,21 @@
 
   function damageWeaponDur() {
     if (!player.equipment || player.durabilityMax <= 0 || player.durBroken) return;
+    // 완충재 모듈이 있으면 장비 내구도 대신 모듈 내구도 감소
+    const weaponId = String(player.equipment.id);
+    const bufMod = (modulesByEquip[weaponId] || [])
+      .find(m => BUFFER_MODULE_TYPES.has(m.moduleType) && (player.moduleDurabilities[m.id] || 0) > 0);
+    if (bufMod) {
+      const next = Math.max(0, (player.moduleDurabilities[bufMod.id] || 0) - 1);
+      player.moduleDurabilities[bufMod.id] = next;
+      if (next === 0) {
+        toast(`🛡️ ${bufMod.name} 소진!`);
+        spawnFx(player.px + TS/2, player.py - 10, `완충재 소진!`, '#ff9800', 1000);
+        _recomputePlayerStats();
+        hudDirty = true;
+      }
+      return;
+    }
     player.durability = Math.max(0, player.durability - 1);
     const activeEq = player.inventory.find(it => it.type === 'equip' && it.active);
     if (activeEq) activeEq.curDur = player.durability;
