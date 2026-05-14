@@ -631,6 +631,23 @@
   // ══════════════════════════════════════════════════════════════
   // 층 이동 / 게임 흐름
   // ══════════════════════════════════════════════════════════════
+  function syncDurabilityToServer() {
+    if (!alpToken || !platformApi) return;
+    const weapon = (player.equipment?.id != null && player.durabilityMax > 0)
+      ? { id: player.equipment.id, durability: player.durability }
+      : null;
+    const armor = Object.values(player.equippedSlots || {})
+      .filter(w => w?.equip?.id != null)
+      .map(w => ({ id: w.equip.id, durability: w.curDur }));
+    if (!weapon && armor.length === 0) return;
+    fetch(`${platformApi}/api/dungeon/sync-durability`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+      body: JSON.stringify({ weapon, armor }),
+      keepalive: true,
+    }).catch(() => {});
+  }
+
   function enterRestFloor() {
     player.powerBonus = 0;
     player.hp = Math.min(player.maxHp, player.hp + Math.round(player.maxHp * 0.25));
@@ -639,7 +656,8 @@
     camX = camTX = 0; camY = camTY = 0; updateCamera(); camX = camTX; camY = camTY;
     toast(`⛺ 휴식층 도착! HP 25% 회복 · 포털로 다음 층 이동`);
     hudDirty = true;
-    saveGame(); // 휴식층 진입 시 저장
+    syncDurabilityToServer(); // 휴식층 진입 시 내구도 DB 동기화
+    saveGame();
   }
 
   function enterCombatFloor() {
