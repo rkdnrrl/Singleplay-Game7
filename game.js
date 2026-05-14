@@ -540,7 +540,21 @@
     enemy.state='cooldown'; enemy.nextMoveAt = performance.now()+500;
     hudDirty = true;
 
-    if (player.hp <= 0) { player.hp=0; clearSave(); setGameState('dead'); }
+    if (player.hp <= 0) {
+      player.hp = 0;
+      // 죽기 전 내구도 동기화 후 세이브 삭제 (keepalive로 페이지 전환 중에도 완료)
+      const _deadSave = buildSaveData();
+      localStorage.removeItem(SAVE_KEY);
+      if (_deadSave && alpToken && platformApi) {
+        fetch(`${platformApi}/api/dungeon/exit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+          body: JSON.stringify({ data: _deadSave }),
+          keepalive: true,
+        }).catch(() => {});
+      }
+      setGameState('dead');
+    }
   }
 
   // 적 → 목표 방향으로 이동
@@ -1449,7 +1463,18 @@
     $btnCounter.addEventListener('touchstart',(ev)=>{ ev.preventDefault(); tryCounter(); },{ passive:false });
     $btnExit.addEventListener('click', async () => {
       if (animId) { cancelAnimationFrame(animId); animId = null; }
-      await saveGame();
+      // exit 엔드포인트: 내구도 동기화 + 세이브 삭제 원자 처리
+      const _exitSave = buildSaveData();
+      localStorage.removeItem(SAVE_KEY);
+      if (_exitSave && alpToken && platformApi) {
+        try {
+          await fetch(`${platformApi}/api/dungeon/exit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+            body: JSON.stringify({ data: _exitSave }),
+          });
+        } catch(_) {}
+      }
       history.back();
     });
 
