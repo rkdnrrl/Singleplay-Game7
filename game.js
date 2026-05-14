@@ -1115,36 +1115,17 @@
 
     if (s === 'dead') {
       if (animId) { cancelAnimationFrame(animId); animId=null; }
-      stopAutoSave();
       $deadStats.textContent =
         `B${floor}F 에서 전투 불능\n처치 ${player.kills}마리  ·  경험치 ${player.xp}`;
     }
     if (s === 'playing') {
-      resizeCanvas(); // screen-game이 visible 된 직후 정확한 크기 측정
+      resizeCanvas();
       updateCamera();
       if (!animId) {
         lastFrameAt = 0; frameCount = 0;
         animId = requestAnimationFrame(loop);
       }
-      startAutoSave();
     }
-    if (s === 'equip_select') {
-      stopAutoSave();
-    }
-  }
-
-  let _autoSaveTimer = null;
-  const AUTO_SAVE_INTERVAL_MS = 30_000;
-
-  function startAutoSave() {
-    if (_autoSaveTimer) return;
-    _autoSaveTimer = setInterval(() => {
-      if (gameState === 'playing') saveGame();
-    }, AUTO_SAVE_INTERVAL_MS);
-  }
-
-  function stopAutoSave() {
-    if (_autoSaveTimer) { clearInterval(_autoSaveTimer); _autoSaveTimer = null; }
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -1259,23 +1240,6 @@
   }
 
   // 페이지 종료/백그라운드 전환 시 keepalive fetch로 저장
-  function saveGameOnUnload() {
-    if (gameState !== 'playing') return;
-    const data = buildSaveData();
-    if (!data) return;
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(_) {}
-    if (alpToken && platformApi) {
-      try {
-        fetch(`${platformApi}/api/dungeon/save`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
-          body: JSON.stringify({ data }),
-          keepalive: true,
-        });
-      } catch(_) {}
-    }
-  }
-
   async function fetchSave() {
     if (alpToken && platformApi) {
       try {
@@ -1654,10 +1618,6 @@
     }
     updateVh();
     window.addEventListener('resize', () => { updateVh(); resizeCanvas(); });
-    window.addEventListener('pagehide', saveGameOnUnload);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') saveGameOnUnload();
-    });
     // visualViewport: 키보드 등으로 viewport 크기 변화 시 추가 대응
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', () => { updateVh(); resizeCanvas(); });
