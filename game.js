@@ -1,6 +1,125 @@
 (function () {
   'use strict';
 
+  // ── 사운드 시스템 (Web Audio API 절차적 생성) ──────────────────
+  const _ac = (() => { try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } })();
+  let _bgmNodes = null; // BGM 노드 참조 (정지용)
+  let _soundEnabled = true;
+
+  function _resume() { if (_ac && _ac.state === 'suspended') _ac.resume(); }
+
+  /** 짧은 효과음: 오실레이터 기반 */
+  function _sfx({ type = 'square', freq = 440, freq2, duration = 0.15, volume = 0.3, decay = 0.1, delay = 0 }) {
+    if (!_ac || !_soundEnabled) return;
+    _resume();
+    const t = _ac.currentTime + delay;
+    const osc = _ac.createOscillator();
+    const gain = _ac.createGain();
+    osc.connect(gain); gain.connect(_ac.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (freq2 != null) osc.frequency.linearRampToValueAtTime(freq2, t + duration);
+    gain.gain.setValueAtTime(volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration + decay);
+    osc.start(t); osc.stop(t + duration + decay + 0.01);
+  }
+
+  /** 노이즈 버스트 (충격음 등) */
+  function _noise({ duration = 0.1, volume = 0.2, freq = 800, q = 1 }) {
+    if (!_ac || !_soundEnabled) return;
+    _resume();
+    const buf = _ac.createBuffer(1, Math.ceil(_ac.sampleRate * duration), _ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = _ac.createBufferSource();
+    src.buffer = buf;
+    const filter = _ac.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = freq; filter.Q.value = q;
+    const gain = _ac.createGain();
+    gain.gain.setValueAtTime(volume, _ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, _ac.currentTime + duration);
+    src.connect(filter); filter.connect(gain); gain.connect(_ac.destination);
+    src.start(); src.stop(_ac.currentTime + duration + 0.01);
+  }
+
+  // ── 효과음 정의 ──────────────────────────────────────────────
+  const SFX = {
+    attack()   { _sfx({ type: 'sawtooth', freq: 220, freq2: 110, duration: 0.08, volume: 0.35, decay: 0.05 }); },
+    hit()      { _noise({ duration: 0.12, volume: 0.4, freq: 400, q: 2 }); _sfx({ type: 'square', freq: 150, freq2: 80, duration: 0.1, volume: 0.2, decay: 0.05 }); },
+    playerHit(){ _noise({ duration: 0.15, volume: 0.5, freq: 300, q: 1.5 }); _sfx({ type: 'sawtooth', freq: 120, freq2: 60, duration: 0.15, volume: 0.3, decay: 0.1 }); },
+    shield()   { _sfx({ type: 'sine', freq: 600, freq2: 900, duration: 0.1, volume: 0.3, decay: 0.1 }); _sfx({ type: 'sine', freq: 900, freq2: 600, duration: 0.1, volume: 0.2, decay: 0.1, delay: 0.05 }); },
+    kill()     { _sfx({ type: 'square', freq: 330, freq2: 220, duration: 0.1, volume: 0.3, decay: 0.05 }); _sfx({ type: 'sine', freq: 440, freq2: 660, duration: 0.15, volume: 0.25, decay: 0.1, delay: 0.08 }); },
+    levelUp()  { [0,0.1,0.2,0.3].forEach((d,i)=>_sfx({ type:'sine', freq:[330,440,550,660][i], duration:0.12, volume:0.3, decay:0.08, delay:d })); },
+    pickup()   { _sfx({ type: 'sine', freq: 660, freq2: 880, duration: 0.08, volume: 0.25, decay: 0.05 }); },
+    stairs()   { [0,0.12,0.24].forEach((d,i)=>_sfx({ type:'sine', freq:[440,550,660][i], duration:0.1, volume:0.3, decay:0.08, delay:d })); },
+    rest()     { _sfx({ type: 'sine', freq: 528, freq2: 660, duration: 0.3, volume: 0.2, decay: 0.2 }); },
+    death()    { [0,0.2,0.5].forEach((d,i)=>_sfx({ type:'sawtooth', freq:[220,180,120][i], duration:0.25, volume:0.35, decay:0.15, delay:d })); },
+    stamina()  { _sfx({ type: 'square', freq: 180, freq2: 160, duration: 0.08, volume: 0.2, decay: 0.05 }); },
+    counter()  { _sfx({ type: 'sawtooth', freq: 440, freq2: 660, duration: 0.12, volume: 0.4, decay: 0.05 }); _noise({ duration: 0.08, volume: 0.3, freq: 600 }); },
+  };
+
+  // ── BGM (던전 분위기 루프) ────────────────────────────────────
+  let _bgmActive = false;
+  const BGM_TEMPO = 0.45; // 박자 간격(초)
+  // 미니멀 아르페지오 패턴 (Hz): 어둡고 반복되는 던전 느낌
+  const BGM_PATTERN = [
+    { freq: 110, dur: 0.35, vol: 0.06, type: 'sine' },
+    { freq: 147, dur: 0.15, vol: 0.04, type: 'sine' },
+    { freq: 110, dur: 0.35, vol: 0.05, type: 'sine' },
+    { freq: 131, dur: 0.15, vol: 0.04, type: 'sine' },
+    { freq:  98, dur: 0.35, vol: 0.06, type: 'sine' },
+    { freq: 131, dur: 0.15, vol: 0.04, type: 'sine' },
+    { freq:  98, dur: 0.35, vol: 0.05, type: 'sine' },
+    { freq: 110, dur: 0.15, vol: 0.04, type: 'sine' },
+    { freq: 131, dur: 0.35, vol: 0.06, type: 'sine' },
+    { freq: 165, dur: 0.15, vol: 0.04, type: 'sine' },
+    { freq: 131, dur: 0.35, vol: 0.05, type: 'sine' },
+    { freq: 147, dur: 0.15, vol: 0.04, type: 'sine' },
+    // 낮은 드론 베이스
+  ];
+  let _bgmStep = 0;
+  let _bgmTimer = null;
+
+  function _bgmTick() {
+    if (!_ac || !_soundEnabled || !_bgmActive) return;
+    const note = BGM_PATTERN[_bgmStep % BGM_PATTERN.length];
+    _sfx({ type: note.type, freq: note.freq, duration: note.dur, volume: note.vol, decay: 0.2 });
+    // 드론 (매 4박마다)
+    if (_bgmStep % 4 === 0) _sfx({ type: 'sine', freq: 55, duration: BGM_TEMPO * 4, volume: 0.04, decay: 0.3 });
+    _bgmStep++;
+    _bgmTimer = setTimeout(_bgmTick, BGM_TEMPO * 1000);
+  }
+
+  function startBGM() {
+    if (_bgmActive) return;
+    _bgmActive = true;
+    _resume();
+    _bgmStep = 0;
+    _bgmTick();
+  }
+
+  function stopBGM() {
+    _bgmActive = false;
+    if (_bgmTimer) { clearTimeout(_bgmTimer); _bgmTimer = null; }
+  }
+
+  // 음소거 토글 버튼 (우측 상단)
+  function _initSoundToggle() {
+    const btn = document.createElement('button');
+    btn.id = 'sound-toggle-btn';
+    btn.title = '사운드 ON/OFF';
+    btn.textContent = '🔊';
+    btn.style.cssText = 'position:fixed;top:8px;right:8px;z-index:9999;background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:16px;';
+    btn.addEventListener('click', () => {
+      _soundEnabled = !_soundEnabled;
+      btn.textContent = _soundEnabled ? '🔊' : '🔇';
+      if (_soundEnabled) { _resume(); if (_bgmActive) { stopBGM(); startBGM(); } }
+      else stopBGM();
+    });
+    document.body.appendChild(btn);
+  }
+  document.addEventListener('DOMContentLoaded', _initSoundToggle);
+
   // ── 서버 연결 ──────────────────────────────────────────────────
   const urlParams  = new URLSearchParams(window.location.search);
   const alpToken   = urlParams.get('token') || '';
@@ -331,11 +450,13 @@
     if (player.stamina < STA_ATK_COST) {
       toast('⚡ 스태미나 부족!');
       spawnFx(player.px + TS/2, player.py - 10, '스태미나 부족', '#9e9e9e', 700);
+      SFX.stamina();
       return;
     }
     player.stamina -= STA_ATK_COST;
     const dmg = Math.max(1, (player.baseAtk + player.powerBonus) - enemy.def_);
     enemy.hp -= dmg;
+    SFX.attack();
     spawnFx(enemy.px + TS/2, enemy.py, `-${dmg}`, '#ff5722');
     if (enemy.hp <= 0) killEnemy(enemy);
     damageWeaponDur();
@@ -347,6 +468,7 @@
     enemy.dead = true;
     player.kills++;
     player.xp += enemy.def.xp;
+    SFX.kill();
     spawnFx(enemy.px+TS/2, enemy.py-10, `+${enemy.def.xp}XP`, '#ffeb3b', 1200);
     hudDirty = true;
   }
@@ -354,6 +476,7 @@
   function pickupItem(item) {
     player.inventory.push({ type:item.type, def:item.def });
     toast(`${item.def.emoji} ${item.def.name} 획득!`);
+    SFX.pickup();
     hudDirty = true;
   }
 
@@ -471,6 +594,7 @@
     const color = perfect ? '#f5c518' : '#ff9800';
     spawnFx(target.px+TS/2, target.py-10, label, color, 1100);
     spawnFx(player.px+TS/2, player.py-10, perfect ? '⚡ 완벽!' : '⚡', color, 800);
+    SFX.counter();
 
     if (target.hp <= 0) killEnemy(target);
     damageWeaponDur();
@@ -594,6 +718,7 @@
     if (player.shieldActive) {
       player.shieldActive = false;
       spawnFx(player.px+TS/2, player.py-10, '차단!', '#2196f3');
+      SFX.shield();
       enemy.state='cooldown'; enemy.nextMoveAt = performance.now()+500;
       hudDirty = true;
       return;
@@ -601,6 +726,7 @@
 
     const dmg = Math.max(1, enemy.atk - player.baseDef);
     player.hp -= dmg;
+    SFX.playerHit();
     spawnFx(player.px+TS/2, player.py-10, `-${dmg}`, '#f44336');
 
     // 피격 부위 방어구 내구도 감소
@@ -731,6 +857,7 @@
     dungeon = generateRestFloor();
     camX = camTX = 0; camY = camTY = 0; updateCamera(); camX = camTX; camY = camTY;
     toast(`⛺ 휴식층 도착! HP 25% 회복 · 포털로 다음 층 이동`);
+    SFX.rest();
     hudDirty = true;
     syncDurabilityToServer(); // 휴식층 진입 시 내구도 DB 동기화
     saveGame();
@@ -743,6 +870,7 @@
     updateFog();
     updateCamera();
     toast(`🏰 B${floor}F 도착!`);
+    SFX.stairs();
     hudDirty = true;
   }
 
@@ -1339,7 +1467,14 @@
     $screenGame.classList.toggle ('hidden', s!=='playing');
     $screenDead.classList.toggle ('hidden', s!=='dead');
 
+    if (s === 'playing') {
+      startBGM();
+    } else {
+      stopBGM();
+    }
+
     if (s === 'dead') {
+      SFX.death();
       if (animId) { cancelAnimationFrame(animId); animId=null; }
       $deadStats.textContent =
         `B${floor}F 에서 전투 불능\n처치 ${player.kills}마리  ·  경험치 ${player.xp}`;
