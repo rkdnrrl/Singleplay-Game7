@@ -3,15 +3,17 @@
 
   // ── 사운드 시스템 (Web Audio API 절차적 생성) ──────────────────
   const _ac = (() => { try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } })();
-  let _bgmNodes = null; // BGM 노드 참조 (정지용)
   let _soundEnabled = true;
+  let _bgmVol = 0.5;  // BGM 볼륨 (0~1)
+  let _sfxVol = 0.7;  // 효과음 볼륨 (0~1)
 
   function _resume() { if (_ac && _ac.state === 'suspended') _ac.resume(); }
 
-  /** 짧은 효과음: 오실레이터 기반 */
-  function _sfx({ type = 'square', freq = 440, freq2, duration = 0.15, volume = 0.3, decay = 0.1, delay = 0 }) {
+  /** 짧은 효과음: 오실레이터 기반 (isBgm=true면 BGM 볼륨 배율 적용) */
+  function _sfx({ type = 'square', freq = 440, freq2, duration = 0.15, volume = 0.3, decay = 0.1, delay = 0, isBgm = false }) {
     if (!_ac || !_soundEnabled) return;
     _resume();
+    const mul = isBgm ? _bgmVol : _sfxVol;
     const t = _ac.currentTime + delay;
     const osc = _ac.createOscillator();
     const gain = _ac.createGain();
@@ -19,7 +21,7 @@
     osc.type = type;
     osc.frequency.setValueAtTime(freq, t);
     if (freq2 != null) osc.frequency.linearRampToValueAtTime(freq2, t + duration);
-    gain.gain.setValueAtTime(volume, t);
+    gain.gain.setValueAtTime(volume * mul, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + duration + decay);
     osc.start(t); osc.stop(t + duration + decay + 0.01);
   }
@@ -36,7 +38,7 @@
     const filter = _ac.createBiquadFilter();
     filter.type = 'bandpass'; filter.frequency.value = freq; filter.Q.value = q;
     const gain = _ac.createGain();
-    gain.gain.setValueAtTime(volume, _ac.currentTime);
+    gain.gain.setValueAtTime(volume * _sfxVol, _ac.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, _ac.currentTime + duration);
     src.connect(filter); filter.connect(gain); gain.connect(_ac.destination);
     src.start(); src.stop(_ac.currentTime + duration + 0.01);
@@ -63,19 +65,18 @@
   const BGM_TEMPO = 0.45; // 박자 간격(초)
   // 미니멀 아르페지오 패턴 (Hz): 어둡고 반복되는 던전 느낌
   const BGM_PATTERN = [
-    { freq: 110, dur: 0.35, vol: 0.06, type: 'sine' },
-    { freq: 147, dur: 0.15, vol: 0.04, type: 'sine' },
-    { freq: 110, dur: 0.35, vol: 0.05, type: 'sine' },
-    { freq: 131, dur: 0.15, vol: 0.04, type: 'sine' },
-    { freq:  98, dur: 0.35, vol: 0.06, type: 'sine' },
-    { freq: 131, dur: 0.15, vol: 0.04, type: 'sine' },
-    { freq:  98, dur: 0.35, vol: 0.05, type: 'sine' },
-    { freq: 110, dur: 0.15, vol: 0.04, type: 'sine' },
-    { freq: 131, dur: 0.35, vol: 0.06, type: 'sine' },
-    { freq: 165, dur: 0.15, vol: 0.04, type: 'sine' },
-    { freq: 131, dur: 0.35, vol: 0.05, type: 'sine' },
-    { freq: 147, dur: 0.15, vol: 0.04, type: 'sine' },
-    // 낮은 드론 베이스
+    { freq: 110, dur: 0.35, vol: 0.22, type: 'sine' },
+    { freq: 147, dur: 0.15, vol: 0.16, type: 'sine' },
+    { freq: 110, dur: 0.35, vol: 0.20, type: 'sine' },
+    { freq: 131, dur: 0.15, vol: 0.16, type: 'sine' },
+    { freq:  98, dur: 0.35, vol: 0.22, type: 'sine' },
+    { freq: 131, dur: 0.15, vol: 0.16, type: 'sine' },
+    { freq:  98, dur: 0.35, vol: 0.20, type: 'sine' },
+    { freq: 110, dur: 0.15, vol: 0.16, type: 'sine' },
+    { freq: 131, dur: 0.35, vol: 0.22, type: 'sine' },
+    { freq: 165, dur: 0.15, vol: 0.16, type: 'sine' },
+    { freq: 131, dur: 0.35, vol: 0.20, type: 'sine' },
+    { freq: 147, dur: 0.15, vol: 0.16, type: 'sine' },
   ];
   let _bgmStep = 0;
   let _bgmTimer = null;
@@ -83,9 +84,9 @@
   function _bgmTick() {
     if (!_ac || !_soundEnabled || !_bgmActive) return;
     const note = BGM_PATTERN[_bgmStep % BGM_PATTERN.length];
-    _sfx({ type: note.type, freq: note.freq, duration: note.dur, volume: note.vol, decay: 0.2 });
+    _sfx({ type: note.type, freq: note.freq, duration: note.dur, volume: note.vol, decay: 0.2, isBgm: true });
     // 드론 (매 4박마다)
-    if (_bgmStep % 4 === 0) _sfx({ type: 'sine', freq: 55, duration: BGM_TEMPO * 4, volume: 0.04, decay: 0.3 });
+    if (_bgmStep % 4 === 0) _sfx({ type: 'sine', freq: 55, duration: BGM_TEMPO * 4, volume: 0.15, decay: 0.3, isBgm: true });
     _bgmStep++;
     _bgmTimer = setTimeout(_bgmTick, BGM_TEMPO * 1000);
   }
@@ -103,22 +104,76 @@
     if (_bgmTimer) { clearTimeout(_bgmTimer); _bgmTimer = null; }
   }
 
-  // 음소거 토글 버튼 (우측 상단)
-  function _initSoundToggle() {
+  // 사운드 볼륨 UI (우측 상단 토글 패널)
+  function _initSoundUI() {
+    // 토글 버튼
     const btn = document.createElement('button');
     btn.id = 'sound-toggle-btn';
-    btn.title = '사운드 ON/OFF';
     btn.textContent = '🔊';
-    btn.style.cssText = 'position:fixed;top:8px;right:8px;z-index:9999;background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:16px;';
-    btn.addEventListener('click', () => {
+    btn.style.cssText = 'position:fixed;top:8px;right:8px;z-index:10000;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:16px;';
+
+    // 볼륨 패널
+    const panel = document.createElement('div');
+    panel.id = 'sound-panel';
+    panel.style.cssText = [
+      'position:fixed;top:40px;right:8px;z-index:10000',
+      'background:rgba(0,0,0,0.82);color:#fff;border-radius:8px',
+      'padding:10px 14px;display:none;flex-direction:column;gap:8px',
+      'min-width:160px;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,0.5)',
+    ].join(';');
+
+    function makeRow(label, value, onChange) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      const lbl = document.createElement('span');
+      lbl.textContent = label;
+      lbl.style.cssText = 'width:36px;flex-shrink:0;';
+      const slider = document.createElement('input');
+      slider.type = 'range'; slider.min = 0; slider.max = 100;
+      slider.value = Math.round(value * 100);
+      slider.style.cssText = 'flex:1;accent-color:#4fc3f7;cursor:pointer;';
+      slider.addEventListener('input', () => onChange(slider.value / 100));
+      row.appendChild(lbl); row.appendChild(slider);
+      return row;
+    }
+
+    panel.appendChild(makeRow('🎵 BGM', _bgmVol, v => { _bgmVol = v; }));
+    panel.appendChild(makeRow('🔔 효과음', _sfxVol, v => { _sfxVol = v; }));
+
+    // 음소거 토글
+    const muteRow = document.createElement('div');
+    muteRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:2px;';
+    const muteBtn = document.createElement('button');
+    muteBtn.textContent = '음소거';
+    muteBtn.style.cssText = 'flex:1;background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:5px;padding:4px;cursor:pointer;font-size:12px;';
+    muteBtn.addEventListener('click', () => {
       _soundEnabled = !_soundEnabled;
+      muteBtn.textContent = _soundEnabled ? '음소거' : '🔇 음소거 해제';
       btn.textContent = _soundEnabled ? '🔊' : '🔇';
       if (_soundEnabled) { _resume(); if (_bgmActive) { stopBGM(); startBGM(); } }
       else stopBGM();
     });
+    muteRow.appendChild(muteBtn);
+    panel.appendChild(muteRow);
+
+    // 토글 클릭 시 패널 열기/닫기
+    let panelOpen = false;
+    btn.addEventListener('click', () => {
+      panelOpen = !panelOpen;
+      panel.style.display = panelOpen ? 'flex' : 'none';
+    });
+    // 패널 바깥 클릭 시 닫기
+    document.addEventListener('click', e => {
+      if (panelOpen && !panel.contains(e.target) && e.target !== btn) {
+        panelOpen = false;
+        panel.style.display = 'none';
+      }
+    });
+
     document.body.appendChild(btn);
+    document.body.appendChild(panel);
   }
-  document.addEventListener('DOMContentLoaded', _initSoundToggle);
+  document.addEventListener('DOMContentLoaded', _initSoundUI);
 
   // ── 서버 연결 ──────────────────────────────────────────────────
   const urlParams  = new URLSearchParams(window.location.search);
