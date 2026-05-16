@@ -1117,9 +1117,28 @@
 
   function enterEscape() {
     if (animId) { cancelAnimationFrame(animId); animId = null; }
-    // 탈출 시 세이브 삭제 (아이템 드롭 없음 — 사망 시에만 지급)
-    clearSave();
     SFX.levelUp();
+
+    // 사망과 동일하게 내구도 동기화 + 아이템 드롭 처리
+    const _escapeSave = buildSaveData();
+    localStorage.removeItem(SAVE_KEY);
+    if (_escapeSave && alpToken && platformApi) {
+      fetch(`${platformApi}/api/dungeon/exit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+        body: JSON.stringify({ data: _escapeSave }),
+        keepalive: true,
+      }).then(r => r.ok ? r.json() : null).then(res => {
+        if (!res?.drops) return;
+        const NAMES = { stone_common:'일반석', stone_rare:'희귀석', crystal_magic:'마정석', shard_legend:'전설파편' };
+        const parts = Object.entries(res.drops).map(([k, v]) => `${NAMES[k]||k} ×${v}`);
+        if (parts.length) {
+          const el = document.getElementById('escaped-stats');
+          if (el) el.textContent += `\n\n💎 획득 아이템: ${parts.join(', ')}`;
+        }
+      }).catch(() => {});
+    }
+
     setGameState('escaped');
   }
 
@@ -1902,7 +1921,7 @@
     if (s === 'escaped') {
       const el = document.getElementById('escaped-stats');
       if (el) el.textContent =
-        `B${floor}F 에서 탈출 성공\n처치 ${player.kills}마리  ·  경험치 ${player.xp}\n\n⚠️ 아이템은 사망 시에만 저장됩니다`;
+        `B${floor}F 에서 탈출 성공\n처치 ${player.kills}마리  ·  경험치 ${player.xp}`;
     }
     if (s === 'playing') {
       resizeCanvas();
