@@ -974,6 +974,14 @@
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
           body: JSON.stringify({ data: _deadSave }),
           keepalive: true,
+        }).then(r => r.ok ? r.json() : null).then(res => {
+          if (!res?.drops) return;
+          const NAMES = { stone_common:'일반석', stone_rare:'희귀석', crystal_magic:'마정석', shard_legend:'전설파편' };
+          const parts = Object.entries(res.drops).map(([k, v]) => `${NAMES[k]||k} ×${v}`);
+          if (parts.length) {
+            const el = document.getElementById('dead-stats');
+            if (el) el.textContent += `\n\n💎 획득 아이템: ${parts.join(', ')}`;
+          }
         }).catch(() => {});
       }
       setGameState('dead');
