@@ -457,12 +457,11 @@
       enemies.push(guardian);
     }
 
-    // 탈출 포탈 (중간 방 중 랜덤 1개)
-    if (rooms.length >= 3) {
+    // 탈출 포탈 — 5층 단위(5, 10, 15...)에만 등장
+    if (f % 5 === 0 && rooms.length >= 3) {
       const midRooms = rooms.slice(1, -1).filter(r => grid[r.cy][r.cx] === T.FLOOR);
       if (midRooms.length > 0) {
         const er = midRooms[Math.floor(Math.random() * midRooms.length)];
-        // 방 안의 랜덤 빈 타일에 배치
         let ex = er.cx, ey = er.cy, etries = 0;
         do {
           ex = er.x + 1 + Math.floor(Math.random() * Math.max(1, er.w - 2));
