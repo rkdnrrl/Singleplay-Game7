@@ -62,39 +62,82 @@
   };
 
   // ── BGM (던전 분위기 루프) ────────────────────────────────────
-  let _bgmActive = false;
-  const BGM_TEMPO = 0.45; // 박자 간격(초)
-  // 미니멀 아르페지오 패턴 (Hz): 어둡고 반복되는 던전 느낌
-  const BGM_PATTERN = [
-    { freq: 110, dur: 0.35, vol: 0.22, type: 'sine' },
-    { freq: 147, dur: 0.15, vol: 0.16, type: 'sine' },
-    { freq: 110, dur: 0.35, vol: 0.20, type: 'sine' },
-    { freq: 131, dur: 0.15, vol: 0.16, type: 'sine' },
-    { freq:  98, dur: 0.35, vol: 0.22, type: 'sine' },
-    { freq: 131, dur: 0.15, vol: 0.16, type: 'sine' },
-    { freq:  98, dur: 0.35, vol: 0.20, type: 'sine' },
-    { freq: 110, dur: 0.15, vol: 0.16, type: 'sine' },
-    { freq: 131, dur: 0.35, vol: 0.22, type: 'sine' },
-    { freq: 165, dur: 0.15, vol: 0.16, type: 'sine' },
-    { freq: 131, dur: 0.35, vol: 0.20, type: 'sine' },
-    { freq: 147, dur: 0.15, vol: 0.16, type: 'sine' },
-  ];
-  let _bgmStep = 0;
-  let _bgmTimer = null;
+  let _bgmActive  = false;
+  let _bgmStep    = 0;
+  let _bgmTimer   = null;
+  let _bgmHpRatio = 1.0; // 0~1, hitPlayer/updateHud에서 갱신
+
+  // ── 일반 BGM (HP > 50%) ─────────────────────────────────────
+  const BGM_NORMAL = {
+    tempo: 0.45,
+    pattern: [
+      { freq: 110, dur: 0.35, vol: 0.22, type: 'sine' },
+      { freq: 147, dur: 0.15, vol: 0.16, type: 'sine' },
+      { freq: 110, dur: 0.35, vol: 0.20, type: 'sine' },
+      { freq: 131, dur: 0.15, vol: 0.16, type: 'sine' },
+      { freq:  98, dur: 0.35, vol: 0.22, type: 'sine' },
+      { freq: 131, dur: 0.15, vol: 0.16, type: 'sine' },
+      { freq:  98, dur: 0.35, vol: 0.20, type: 'sine' },
+      { freq: 110, dur: 0.15, vol: 0.16, type: 'sine' },
+    ],
+    droneFreq: 55, droneVol: 0.15,
+  };
+
+  // ── 위험 BGM (HP 25~50%): 더 빠르고 긴장감 있는 패턴 ────────
+  const BGM_DANGER = {
+    tempo: 0.30,
+    pattern: [
+      { freq: 147, dur: 0.22, vol: 0.26, type: 'sawtooth' },
+      { freq: 110, dur: 0.12, vol: 0.18, type: 'sawtooth' },
+      { freq: 155, dur: 0.22, vol: 0.24, type: 'sawtooth' },
+      { freq: 110, dur: 0.12, vol: 0.18, type: 'sawtooth' },
+      { freq: 131, dur: 0.22, vol: 0.26, type: 'sawtooth' },
+      { freq:  98, dur: 0.12, vol: 0.20, type: 'sawtooth' },
+      { freq: 147, dur: 0.22, vol: 0.24, type: 'sawtooth' },
+      { freq: 123, dur: 0.12, vol: 0.18, type: 'sawtooth' },
+    ],
+    droneFreq: 65, droneVol: 0.20,
+  };
+
+  // ── 위기 BGM (HP < 25%): 매우 빠르고 불안한 패턴 ────────────
+  const BGM_CRITICAL = {
+    tempo: 0.18,
+    pattern: [
+      { freq: 185, dur: 0.14, vol: 0.30, type: 'square' },
+      { freq: 110, dur: 0.08, vol: 0.22, type: 'square' },
+      { freq: 196, dur: 0.14, vol: 0.28, type: 'square' },
+      { freq:  98, dur: 0.08, vol: 0.22, type: 'square' },
+      { freq: 220, dur: 0.14, vol: 0.30, type: 'square' },
+      { freq: 110, dur: 0.08, vol: 0.20, type: 'square' },
+      { freq: 185, dur: 0.14, vol: 0.28, type: 'square' },
+      { freq: 131, dur: 0.08, vol: 0.22, type: 'square' },
+    ],
+    droneFreq: 80, droneVol: 0.25,
+  };
+
+  function _getBgmConfig() {
+    if (_bgmHpRatio <= 0.25) return BGM_CRITICAL;
+    if (_bgmHpRatio <= 0.50) return BGM_DANGER;
+    return BGM_NORMAL;
+  }
 
   function _bgmTick() {
     if (!_ac || !_soundEnabled || !_bgmActive) return;
-    const note = BGM_PATTERN[_bgmStep % BGM_PATTERN.length];
-    _sfx({ type: note.type, freq: note.freq, duration: note.dur, volume: note.vol, decay: 0.2, isBgm: true });
+    const cfg  = _getBgmConfig();
+    const note = cfg.pattern[_bgmStep % cfg.pattern.length];
+    _sfx({ type: note.type, freq: note.freq, duration: note.dur, volume: note.vol, decay: 0.15, isBgm: true });
     // 드론 (매 4박마다)
-    if (_bgmStep % 4 === 0) _sfx({ type: 'sine', freq: 55, duration: BGM_TEMPO * 4, volume: 0.15, decay: 0.3, isBgm: true });
+    if (_bgmStep % 4 === 0) {
+      _sfx({ type: 'sine', freq: cfg.droneFreq, duration: cfg.tempo * 4, volume: cfg.droneVol, decay: 0.3, isBgm: true });
+    }
     _bgmStep++;
-    _bgmTimer = setTimeout(_bgmTick, BGM_TEMPO * 1000);
+    _bgmTimer = setTimeout(_bgmTick, cfg.tempo * 1000);
   }
 
   function startBGM() {
     if (_bgmActive) return;
     _bgmActive = true;
+    _bgmHpRatio = 1.0;
     _resume();
     _bgmStep = 0;
     _bgmTick();
@@ -1788,6 +1831,8 @@
     $hpBar.style.width = hpPct + '%';
     $hpBar.style.background = hpPct>50 ? '#4caf50' : hpPct>25 ? '#ff9800' : '#f44336';
     $hpText.textContent = `${player.hp}/${player.maxHp}`;
+    // BGM 긴박도 갱신
+    _bgmHpRatio = player.maxHp > 0 ? player.hp / player.maxHp : 1;
 
     // 내구도 바
     if (player.durabilityMax > 0) {
