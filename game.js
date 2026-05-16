@@ -287,7 +287,7 @@
 
   // ── DOM 참조 ───────────────────────────────────────────────────
   let $screenEquip, $screenGame, $screenDead;
-  let $equipList, $equipStatus, $btnBare;
+  let $equipList, $equipStatus;
   let $hpBar, $hpText, $durBar, $durText, $staBar, $staText;
   let $floorLbl, $equipNameHud, $armorNameHud, $itemSlots;
   let $rpPrompt, $rpBar, $rpCounter, $toast;
@@ -2318,7 +2318,7 @@
     if (!$btn) return;
     const n = Object.values(selectedSlots).filter(Boolean).length;
     $btn.textContent = n > 0 ? `⚔️ 입장 (${n}개 장착)` : '⚔️ 입장';
-    $btn.disabled = n === 0;
+    $btn.disabled = false;
   }
 
   /** 세부 슬롯 감지 — DB값 우선, 없으면 이름 키워드 → 해시 순으로 fallback */
@@ -2587,7 +2587,6 @@
       );
       startGame(weaponArr, armorSlots);
     });
-    $btnBare.addEventListener('click', () => startGame(null, {}));
     $btnRestart.addEventListener('click', ()=>{
       if(animId){ cancelAnimationFrame(animId); animId=null; }
       setGameState('equip_select');
@@ -2638,7 +2637,6 @@
     $screenDead   = document.getElementById('screen-dead');
     $equipList    = null; // 구 equip-list 제거됨 (inv-grid로 대체)
     $equipStatus  = document.getElementById('equip-status');
-    $btnBare      = document.getElementById('btn-bare');
     $hpBar        = document.getElementById('hp-bar');
     $hpText       = document.getElementById('hp-text');
     $durBar       = document.getElementById('dur-bar');
