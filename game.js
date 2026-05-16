@@ -2426,6 +2426,15 @@
       badge.textContent = slotDef?.emoji || '';
       item.appendChild(badge);
 
+      // 클릭으로 장착 해제
+      item.addEventListener('click', () => {
+        const equippedSlot = Object.entries(selectedSlots).find(([, v]) => v === eq)?.[0];
+        if (equippedSlot) {
+          selectedSlots[equippedSlot] = null;
+          refreshSlotUI(); refreshInvEquip(); updateEnterBtn();
+        }
+      });
+
       // 마우스 드래그
       item.addEventListener('dragstart', e => {
         _dragItem = eq;
