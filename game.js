@@ -2430,12 +2430,17 @@
       item.addEventListener('dragstart', e => {
         _dragItem = eq;
         e.dataTransfer.effectAllowed = 'move';
+        // 브라우저 기본 드래그 고스트 이미지 제거 (빈 이미지로 대체)
+        const blank = document.createElement('canvas');
+        blank.width = blank.height = 1;
+        e.dataTransfer.setDragImage(blank, 0, 0);
         setTimeout(() => item.classList.add('dragging'), 0);
       });
       item.addEventListener('dragend', () => { _dragItem = null; item.classList.remove('dragging'); });
 
       // 터치 드래그 시작
       item.addEventListener('touchstart', e => {
+        e.preventDefault(); // 스크롤 방지
         _touchDragItem   = eq;
         _touchDragOrigin = item;
         const t = e.touches[0];
@@ -2446,7 +2451,7 @@
         _ghostEl.style.top  = t.clientY + 'px';
         document.body.appendChild(_ghostEl);
         item.classList.add('dragging');
-      }, { passive: true });
+      }, { passive: false }); // passive:false 여야 preventDefault 가능
 
       $grid.appendChild(item);
     });
@@ -2456,6 +2461,7 @@
       document._dungeonTouchDrag = true;
       document.addEventListener('touchmove', e => {
         if (!_ghostEl) return;
+        e.preventDefault(); // 드래그 중 페이지 스크롤 차단
         const t = e.touches[0];
         _ghostEl.style.left = t.clientX + 'px';
         _ghostEl.style.top  = t.clientY + 'px';
@@ -2465,7 +2471,7 @@
                     && t.clientY >= r.top  && t.clientY <= r.bottom;
           slot.classList.toggle('drag-over', over);
         });
-      }, { passive: true });
+      }, { passive: false }); // passive:false 여야 preventDefault 가능
 
       document.addEventListener('touchend', e => {
         if (!_ghostEl || !_touchDragItem) return;
