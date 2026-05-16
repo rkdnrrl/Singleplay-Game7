@@ -14,31 +14,60 @@
   <div id="screen-equip" class="screen">
     <div class="select-card">
       <h1 class="select-title">⚔️ 던전 탐험</h1>
-      <p class="select-sub">슬롯을 눌러 장비를 장착하세요</p>
+      <p class="select-sub">장비를 슬롯으로 드래그해서 착용하세요</p>
 
-      <!-- 장비 슬롯 패널 -->
-      <div class="equip-slot-panel">
-        <div class="equip-slot-grid">
-          <div class="equip-slot" data-slot="weapon"    title="무기">    <span class="slot-emoji">⚔️</span><span class="slot-label">무기</span></div>
-          <div class="equip-slot" data-slot="head"      title="머리">    <span class="slot-emoji">🪖</span><span class="slot-label">머리</span></div>
-          <div class="equip-slot" data-slot="chest"     title="상의">    <span class="slot-emoji">🧥</span><span class="slot-label">상의</span></div>
-          <div class="equip-slot" data-slot="pants"     title="하의">    <span class="slot-emoji">👖</span><span class="slot-label">하의</span></div>
-          <div class="equip-slot" data-slot="gloves"    title="장갑">    <span class="slot-emoji">🧤</span><span class="slot-label">장갑</span></div>
-          <div class="equip-slot" data-slot="boots"     title="신발">    <span class="slot-emoji">👢</span><span class="slot-label">신발</span></div>
-          <div class="equip-slot" data-slot="accessory" title="악세서리"><span class="slot-emoji">💍</span><span class="slot-label">악세</span></div>
+      <!-- 파피돌 (디아블로 스타일) -->
+      <div class="paperdoll">
+        <div class="doll-slot" data-slot="head">
+          <span class="doll-slot-icon">🪖</span><span class="doll-slot-label">머리</span>
+        </div>
+        <div class="doll-char">
+          <svg viewBox="0 0 60 130" width="54" height="118" aria-hidden="true">
+            <defs>
+              <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <circle cx="30" cy="18" r="13" fill="#12082a" stroke="#7c4dff" stroke-width="1.5" filter="url(#glow)"/>
+            <rect x="18" y="34" width="24" height="34" rx="4" fill="#12082a" stroke="#7c4dff" stroke-width="1.5"/>
+            <line x1="18" y1="38" x2="6"  y2="60" stroke="#7c4dff" stroke-width="2" stroke-linecap="round"/>
+            <line x1="42" y1="38" x2="54" y2="60" stroke="#7c4dff" stroke-width="2" stroke-linecap="round"/>
+            <line x1="24" y1="68" x2="22" y2="98" stroke="#7c4dff" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="36" y1="68" x2="38" y2="98" stroke="#7c4dff" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="22" y1="98" x2="16" y2="108" stroke="#7c4dff" stroke-width="2" stroke-linecap="round"/>
+            <line x1="38" y1="98" x2="44" y2="108" stroke="#7c4dff" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="doll-slot" data-slot="accessory">
+          <span class="doll-slot-icon">💍</span><span class="doll-slot-label">악세</span>
+        </div>
+        <div class="doll-slot" data-slot="weapon">
+          <span class="doll-slot-icon">⚔️</span><span class="doll-slot-label">무기</span>
+        </div>
+        <div class="doll-slot" data-slot="chest">
+          <span class="doll-slot-icon">🧥</span><span class="doll-slot-label">상의</span>
+        </div>
+        <div class="doll-slot" data-slot="gloves">
+          <span class="doll-slot-icon">🧤</span><span class="doll-slot-label">장갑</span>
+        </div>
+        <div class="doll-slot" data-slot="pants">
+          <span class="doll-slot-icon">👖</span><span class="doll-slot-label">하의</span>
+        </div>
+        <div class="doll-slot" data-slot="boots">
+          <span class="doll-slot-icon">👢</span><span class="doll-slot-label">신발</span>
         </div>
       </div>
 
-      <!-- 선택된 슬롯의 장비 목록 -->
-      <div id="equip-picker" class="equip-picker hidden">
-        <p id="equip-picker-title" class="equip-picker-title"></p>
-        <div id="equip-list" class="equip-list"></div>
+      <!-- 인벤토리 -->
+      <div class="inv-panel">
+        <div class="inv-panel-hdr">
+          <span>보유 장비</span>
+          <span id="equip-status" class="equip-status-badge"></span>
+        </div>
+        <div class="inv-grid" id="inv-grid"></div>
       </div>
 
-      <p id="equip-status" class="equip-status">장비 불러오는 중…</p>
       <div class="equip-btn-row">
         <button id="btn-enter" class="btn-primary" disabled>⚔️ 입장</button>
-        <button id="btn-bare" class="btn-naked">🏃 맨손으로 입장</button>
+        <button id="btn-bare" class="btn-naked">🏃 맨손으로</button>
       </div>
     </div>
   </div>
