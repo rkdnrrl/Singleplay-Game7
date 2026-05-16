@@ -236,6 +236,7 @@
   let canvas, ctx, animId;
   let gameState = 'equip_select'; // equip_select | playing | dead
   let _invKey = '';    // 인벤토리 변경 감지용 캐시 키
+  let _guardianHinted = false; // 수문장 힌트 표시 여부
   let $tooltip = null; // PC 툴팁 엘리먼트
   let _lastDirKey = null, _lastDirAt = 0; // 더블 방향 입력 감지
   let floor, dungeon, effects, frameCount, isRestFloor;
@@ -327,6 +328,7 @@
     // 마지막 방에 계단
     const lastR = rooms[rooms.length-1];
     grid[lastR.cy][lastR.cx] = T.STAIRS;
+    const stairsGx = lastR.cx, stairsGy = lastR.cy;
 
     // 중간 방에 상자
     if (rooms.length >= 3) {
@@ -372,6 +374,26 @@
         const mr = rooms[Math.floor(rooms.length/2)];
         enemies.push(makeEnemy(bd, mr.cx, mr.cy, scale));
       }
+    }
+
+    // 수문장 — 계단 옆에 배치, 처치해야 계단 이용 가능
+    {
+      const gScale = scale * 1.8; // 일반 몬스터보다 1.8배 강함
+      const gDef = (EDEFS.filter(d => !d.isBoss && f >= d.minF).sort((a,b) => b.hp - a.hp)[0])
+                || EDEFS[EDEFS.length - 1];
+      // 계단 인접 칸 중 빈 FLOOR 선택
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
+      let gx = stairsGx, gy = stairsGy;
+      for (const [ddx, ddy] of dirs) {
+        const cx = stairsGx + ddx, cy = stairsGy + ddy;
+        if (grid[cy]?.[cx] === T.FLOOR && !enemies.some(e => e.gx===cx && e.gy===cy)) {
+          gx = cx; gy = cy; break;
+        }
+      }
+      const guardian = makeEnemy(gDef, gx, gy, gScale);
+      guardian.isGuardian = true;
+      guardian.isGuardianDead = false;
+      enemies.push(guardian);
     }
 
     // 바닥 아이템 (1~2개)
@@ -522,7 +544,15 @@
     const ii = dungeon.items.findIndex(it => it.gx===nx && it.gy===ny);
     if (ii !== -1) { pickupItem(dungeon.items[ii]); dungeon.items.splice(ii,1); }
 
-    if (tile === T.STAIRS) { enterRestFloor(); return; }
+    if (tile === T.STAIRS) {
+      const guardian = dungeon.enemies.find(e => e.isGuardian && !e.dead);
+      if (guardian) {
+        toast('⚠️ 수문장을 처치해야 올라갈 수 있다!');
+        spawnFx(player.px+TS/2, player.py-14, '수문장 처치 필요!', '#ff9800', 1400);
+        return;
+      }
+      enterRestFloor(); return;
+    }
     if (tile === T.PORTAL) { enterCombatFloor(); return; }
     if (tile === T.CHEST)  { openChest(nx, ny); }
   }
@@ -887,6 +917,22 @@
     // 반응 프롬프트 갱신
     if (anyTelegraph) renderRpPrompt();
     else hideRpPrompt();
+
+    // 수문장 힌트 — 계단 3칸 이내 접근 시 1회 표시
+    if (!_guardianHinted && !isRestFloor) {
+      const guardian = dungeon.enemies.find(e => e.isGuardian && !e.dead);
+      if (guardian) {
+        const stairsTile = dungeon.grid.flatMap((row, gy) =>
+          row.map((t, gx) => t === T.STAIRS ? { gx, gy } : null)).find(Boolean);
+        if (stairsTile) {
+          const dist = Math.abs(player.gx - stairsTile.gx) + Math.abs(player.gy - stairsTile.gy);
+          if (dist <= 4) {
+            toast(`👑 수문장을 처치해야 위층으로 올라갈 수 있다!`);
+            _guardianHinted = true;
+          }
+        }
+      }
+    }
   }
 
   // 플레이어가 공격 맞음
@@ -1047,6 +1093,7 @@
   function enterCombatFloor() {
     floor++;
     isRestFloor = false;
+    _guardianHinted = false;
     dungeon = generateDungeon(floor);
     updateFog();
     updateCamera();
@@ -1449,13 +1496,30 @@
 
       const sx=e.px-camX, sy=e.py-camY;
 
+      // 수문장 글로우
+      if (e.isGuardian) {
+        const pulse = 0.55 + 0.45 * Math.sin(now * 0.004);
+        ctx.save();
+        ctx.shadowBlur = 18; ctx.shadowColor = `rgba(255,120,0,${pulse})`;
+        ctx.strokeStyle = `rgba(255,160,0,${pulse})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(sx+TS/2,sy+TS/2,TS/2,0,Math.PI*2); ctx.stroke();
+        ctx.restore();
+      }
+
       // 배경 원
-      ctx.fillStyle = e.state==='stunned' ? '#1e3040' : '#0d0d1a';
+      ctx.fillStyle = e.isGuardian ? '#1a0800' : e.state==='stunned' ? '#1e3040' : '#0d0d1a';
       ctx.beginPath(); ctx.arc(sx+TS/2,sy+TS/2,TS/2-3,0,Math.PI*2); ctx.fill();
 
       // 이모지
       ctx.font='19px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(e.def.emoji,sx+TS/2,sy+TS/2+1);
+
+      // 수문장 왕관 표시
+      if (e.isGuardian) {
+        ctx.font='10px serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+        ctx.fillText('👑',sx+TS/2,sy+2);
+      }
 
       // HP 바
       const hp_pct=e.hp/e.maxHp;
