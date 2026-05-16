@@ -2169,14 +2169,38 @@
     $btn.disabled = n === 0;
   }
 
-  /** 슬롯에 아이템 장착 시도 — 슬롯 타입 검증 포함 */
+  /** 아이템 이름에서 세부 슬롯 감지 (서버는 weapon|armor만 반환) */
+  function detectItemSlot(eq) {
+    const raw = eq.stats?.equipSlot || 'weapon';
+    if (raw === 'weapon') return 'weapon';
+
+    const name = (eq.name || '').toLowerCase();
+    const KW = {
+      head:      ['투구','헬멧','모자','관','머리띠','베레모','두건'],
+      chest:     ['갑옷','흉갑','조끼','망토','코트','로브','겉옷','상의'],
+      pants:     ['바지','레깅스','치마','하의','정강이갑'],
+      gloves:    ['장갑','건틀릿','암보호대','손목보호대'],
+      boots:     ['장화','부츠','철화','그리브','전투화','기사부츠','가죽장화'],
+      accessory: ['반지','목걸이','귀걸이','팔찌','부적','메달','브로치','펜던트','뱃지'],
+    };
+    for (const [slot, keywords] of Object.entries(KW)) {
+      if (keywords.some(k => name.includes(k))) return slot;
+    }
+    // 이름으로 판별 불가 시 ID 해시로 결정 (같은 아이템은 항상 같은 슬롯)
+    const SLOTS = ['chest','head','pants','gloves','boots','accessory'];
+    let h = 5381;
+    for (const c of String(eq.id || eq.name || '')) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0;
+    return SLOTS[h % SLOTS.length];
+  }
+
+  /** 슬롯에 아이템 장착 시도 — 세부 슬롯 검증 */
   function _tryEquip(slotId, eq) {
-    const need = eq.stats?.equipSlot || 'weapon';
+    const need = detectItemSlot(eq);
     if (need !== slotId) {
       const el = document.querySelector(`.doll-slot[data-slot="${slotId}"]`);
       if (el) { el.classList.add('slot-reject'); setTimeout(() => el.classList.remove('slot-reject'), 350); }
       const def = SLOT_DEFS.find(d => d.id === need);
-      showToast(`${def?.label || need} 슬롯 전용 장비입니다`);
+      showToast(`${def?.emoji || ''} ${def?.label || need} 슬롯 전용입니다`);
       return;
     }
     selectedSlots[slotId] = eq;
@@ -2217,11 +2241,14 @@
       const emoji  = eq.itemEmoji || eq.emoji || SLOT_DEFS.find(d => d.id === slotId)?.emoji || '⚔️';
       const pa     = eq.pixelArt || eq.pixel_art;
 
+      const detectedSlot = detectItemSlot(eq);
+      const slotDef = SLOT_DEFS.find(d => d.id === detectedSlot);
+
       const item = document.createElement('div');
       item.className = 'inv-item' + (tier !== 'common' ? ` rarity-${tier}` : '');
       item.draggable = true;
       item.dataset.eqId = eq.id;
-      item.title = `${eq.name || '장비'} (${SLOT_DEFS.find(d => d.id === slotId)?.label || slotId})`;
+      item.title = `${eq.name || '장비'} → ${slotDef?.label || detectedSlot} 슬롯`;
 
       const thumb = document.createElement('div');
       thumb.className = 'inv-thumb';
@@ -2239,6 +2266,12 @@
       const name = document.createElement('span');
       name.className = 'inv-item-name'; name.textContent = eq.name || '장비';
       item.appendChild(name);
+
+      // 슬롯 배지 (어디에 드래그해야 하는지 표시)
+      const badge = document.createElement('span');
+      badge.className = 'inv-slot-badge';
+      badge.textContent = slotDef?.emoji || '';
+      item.appendChild(badge);
 
       // 마우스 드래그
       item.addEventListener('dragstart', e => {
