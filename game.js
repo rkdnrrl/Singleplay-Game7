@@ -181,6 +181,24 @@
   const alpToken   = urlParams.get('token') || '';
   const platformApi = window.__ALP_PLATFORM_API__ || '';
 
+  let _sessionExpiredShown = false;
+  function showSessionExpiredBanner() {
+    if (_sessionExpiredShown) return;
+    _sessionExpiredShown = true;
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0 0 auto;z-index:99999;background:#dc2626;color:#fff;' +
+      'padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.4)';
+    el.innerHTML = '<span>🔒 로그인이 만료됐습니다. 다시 로그인해 주세요.</span>' +
+      '<a href="/ko/login" style="background:#fff;color:#dc2626;padding:4px 12px;border-radius:6px;font-weight:600;text-decoration:none">로그인</a>';
+    document.body.prepend(el);
+  }
+  function apiFetch(url, init) {
+    return fetch(url, init).then(res => {
+      if (res.status === 401 && alpToken) showSessionExpiredBanner();
+      return res;
+    });
+  }
+
   // ── 상수 ───────────────────────────────────────────────────────
   const DW = 32, DH = 32;  // 던전 격자 크기
   const TS = 32;            // 타일 픽셀 크기
@@ -986,7 +1004,7 @@
       const _deadSave = buildSaveData();
       localStorage.removeItem(SAVE_KEY);
       if (_deadSave && alpToken && platformApi) {
-        fetch(`${platformApi}/api/dungeon/exit`, {
+        apiFetch(`${platformApi}/api/dungeon/exit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
           body: JSON.stringify({ data: _deadSave }),
@@ -1092,7 +1110,7 @@
       .filter(w => w?.equip?.id != null)
       .map(w => ({ id: w.equip.id, durability: w.curDur }));
     if (!weapon && armor.length === 0) return;
-    fetch(`${platformApi}/api/dungeon/sync-durability`, {
+    apiFetch(`${platformApi}/api/dungeon/sync-durability`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
       body: JSON.stringify({ weapon, armor }),
@@ -1123,7 +1141,7 @@
     const _escapeSave = buildSaveData();
     localStorage.removeItem(SAVE_KEY);
     if (_escapeSave && alpToken && platformApi) {
-      fetch(`${platformApi}/api/dungeon/exit`, {
+      apiFetch(`${platformApi}/api/dungeon/exit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
         body: JSON.stringify({ data: _escapeSave }),
@@ -1223,7 +1241,7 @@
 
   function deleteEquipFromServer(id) {
     if (!alpToken || !platformApi || !id) return;
-    fetch(`${platformApi}/api/craft/equipment/${id}`, {
+    apiFetch(`${platformApi}/api/craft/equipment/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${alpToken}` },
     }).catch(() => {});
@@ -2050,7 +2068,7 @@
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(_) {}
     if (alpToken && platformApi) {
       try {
-        await fetch(`${platformApi}/api/dungeon/save`, {
+        await apiFetch(`${platformApi}/api/dungeon/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
           body: JSON.stringify({ data }),
@@ -2064,7 +2082,7 @@
   async function fetchSave() {
     if (alpToken && platformApi) {
       try {
-        const res = await fetch(`${platformApi}/api/dungeon/save`, {
+        const res = await apiFetch(`${platformApi}/api/dungeon/save`, {
           headers: { Authorization: `Bearer ${alpToken}` },
         });
         if (res.ok) {
@@ -2080,7 +2098,7 @@
 
   function clearSave() {
     if (alpToken && platformApi) {
-      fetch(`${platformApi}/api/dungeon/save`, {
+      apiFetch(`${platformApi}/api/dungeon/save`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${alpToken}` },
       }).catch(() => {});
@@ -2203,10 +2221,10 @@
     try {
       $equipStatus.textContent = '장비 불러오는 중…';
       const [eqRes, modRes] = await Promise.all([
-        fetch(`${platformApi}/api/craft/equipment?limit=40`, {
+        apiFetch(`${platformApi}/api/craft/equipment?limit=40`, {
           headers: { Authorization:`Bearer ${alpToken}` },
         }),
-        fetch(`${platformApi}/api/modules`, {
+        apiFetch(`${platformApi}/api/modules`, {
           headers: { Authorization:`Bearer ${alpToken}` },
         }).catch(() => null),
       ]);
