@@ -2270,6 +2270,11 @@
       const eq     = selectedSlots[slotId];
       el.classList.toggle('slot-equipped', !!eq);
       el.innerHTML = '';
+      el.onclick = eq ? () => {
+        selectedSlots[slotId] = null;
+        refreshSlotUI(); refreshInvEquip(); updateEnterBtn();
+      } : null;
+      el.style.cursor = eq ? 'pointer' : '';
       if (eq) {
         const pa = eq.pixelArt || eq.pixel_art;
         if (pa && pa.imageDataUrl) {
@@ -2288,11 +2293,6 @@
         el.appendChild(lbl);
         const x = document.createElement('span');
         x.className = 'doll-slot-unequip'; x.textContent = '✕';
-        x.onclick = ev => {
-          ev.stopPropagation();
-          selectedSlots[slotId] = null;
-          refreshSlotUI(); refreshInvEquip(); updateEnterBtn();
-        };
         el.appendChild(x);
       } else {
         const icon = document.createElement('span');
