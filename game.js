@@ -984,14 +984,28 @@
     }
 
     const atkVal = player.curseActive ? Math.max(1, Math.floor(enemy.atk * 0.7)) : enemy.atk;
-    const dmg = Math.max(1, atkVal - player.baseDef);
-    player.hp -= dmg;
-    SFX.playerHit();
-    spawnFx(player.px+TS/2, player.py-10, `-${dmg}`, '#f44336');
+    const rawDmg = Math.max(1, atkVal - player.baseDef);
 
-    // 피격 부위 방어구 내구도 감소
-    const hitSlot = pickHitSlot();
-    if (hitSlot) damageArmorSlot(hitSlot);
+    // ── 부위 피격 처리 ──────────────────────────────────────
+    // 모든 부위 중 랜덤 선택 (장착 여부 무관)
+    const ALL_SLOTS = ['head','chest','pants','gloves','boots','accessory'];
+    const hitSlot = ALL_SLOTS[Math.floor(Math.random() * ALL_SLOTS.length)];
+    const armorWrapper = player.equippedSlots[hitSlot];
+    const hasArmor = armorWrapper && armorWrapper.curDur > 0;
+
+    let hpDmg = rawDmg;
+    if (hasArmor) {
+      // 장착 부위: 방어구 내구도가 데미지 일부 흡수 (50%)
+      const absorbed = Math.floor(rawDmg * 0.5);
+      hpDmg = Math.max(1, rawDmg - absorbed);
+      damageArmorSlot(hitSlot);
+      const def = SLOT_DEFS.find(d => d.id === hitSlot);
+      spawnFx(player.px+TS/2, player.py-24, `${def?.emoji||''} 내구↓`, '#ff9800', 700);
+    }
+
+    player.hp -= hpDmg;
+    SFX.playerHit();
+    spawnFx(player.px+TS/2, player.py-10, `-${hpDmg}`, '#f44336');
     damageDefensiveModules();
 
     enemy.state='cooldown'; enemy.nextMoveAt = performance.now()+500;
