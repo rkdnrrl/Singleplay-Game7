@@ -2169,10 +2169,11 @@
     $btn.disabled = n === 0;
   }
 
-  /** 아이템 이름에서 세부 슬롯 감지 (서버는 weapon|armor만 반환) */
+  /** 세부 슬롯 감지 — DB값 우선, 없으면 이름 키워드 → 해시 순으로 fallback */
   function detectItemSlot(eq) {
-    const raw = eq.stats?.equipSlot || 'weapon';
-    if (raw === 'weapon') return 'weapon';
+    const raw = eq.stats?.equipSlot || '';
+    const VALID = new Set(['weapon','head','chest','pants','gloves','boots','accessory']);
+    if (VALID.has(raw)) return raw; // DB에 세부 슬롯 있으면 바로 사용
 
     const name = (eq.name || '').toLowerCase();
     const KW = {
