@@ -2078,10 +2078,15 @@
     }
   }
 
+  const MAX_EQUIP    = 2;   // 최대 장착 가능 장비 수
   let selectedEquips = []; // 선택된 무기 목록 (복수)
   let selectedSlots  = {}; // { head: eq|null, chest: eq|null, ... }
   let _allEquipList  = []; // 전체 장비 목록 캐시
   let _activeSlot    = null; // 현재 선택된 슬롯 id
+
+  function totalEquipCount() {
+    return selectedEquips.length + Object.values(selectedSlots).filter(Boolean).length;
+  }
 
   function makeEquipCard(eq) {
     const s   = eq.stats || {};
@@ -2206,8 +2211,12 @@
         if (selectedEquips.includes(eq)) card.classList.add('equip-selected');
         const toggle = () => {
           const idx = selectedEquips.indexOf(eq);
-          if (idx === -1) { selectedEquips.push(eq); card.classList.add('equip-selected'); }
-          else            { selectedEquips.splice(idx,1); card.classList.remove('equip-selected'); }
+          if (idx === -1) {
+            if (totalEquipCount() >= MAX_EQUIP) { showToast(`장비는 최대 ${MAX_EQUIP}개까지 장착 가능합니다`); return; }
+            selectedEquips.push(eq); card.classList.add('equip-selected');
+          } else {
+            selectedEquips.splice(idx,1); card.classList.remove('equip-selected');
+          }
           refreshSlotUI();
           updateEnterBtn();
         };
@@ -2221,6 +2230,9 @@
             selectedSlots[slotId] = null;
             card.classList.remove('equip-selected');
           } else {
+            if (totalEquipCount() >= MAX_EQUIP && selectedSlots[slotId] == null) {
+              showToast(`장비는 최대 ${MAX_EQUIP}개까지 장착 가능합니다`); return;
+            }
             slotCardPairs.forEach(p => p.card.classList.remove('equip-selected'));
             selectedSlots[slotId] = eq;
             card.classList.add('equip-selected');
@@ -2270,10 +2282,9 @@
   function updateEnterBtn() {
     const $btn = document.getElementById('btn-enter');
     if (!$btn) return;
-    const slotCount = Object.values(selectedSlots).filter(Boolean).length;
-    const total = selectedEquips.length + slotCount;
+    const total = totalEquipCount();
     if (total > 0) {
-      $btn.textContent = `⚔️ 입장 (${total}개)`;
+      $btn.textContent = `⚔️ 입장 (${total}/${MAX_EQUIP})`;
       $btn.disabled = false;
     } else {
       $btn.textContent = '⚔️ 입장';
