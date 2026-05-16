@@ -1270,16 +1270,40 @@
     hudDirty = true;
   }
 
+  const ARMOR_SLOT_ICON = { head:'🪖', chest:'🧥', pants:'👖', gloves:'🧤', boots:'👢', accessory:'💍' };
+
   function updateArmorHud() {
-    if (!$armorNameHud) return;
-    const tot = calcArmorTotals();
-    const parts = [];
-    if (tot.def > 0) parts.push(`🛡️+${tot.def}`);
-    if (tot.hp  > 0) parts.push(`❤️+${tot.hp}`);
-    // 파괴된 슬롯 수 표시
-    const broken = Object.values(player.equippedSlots).filter(w => w && w.curDur <= 0).length;
-    if (broken > 0) parts.push(`💥${broken}파괴`);
-    $armorNameHud.textContent = parts.length ? parts.join(' ') : '방어구 없음';
+    // 상단 텍스트 HUD (스탯 요약)
+    if ($armorNameHud) {
+      const tot = calcArmorTotals();
+      const parts = [];
+      if (tot.def > 0) parts.push(`🛡️+${tot.def}`);
+      if (tot.hp  > 0) parts.push(`❤️+${tot.hp}`);
+      const broken = Object.values(player.equippedSlots).filter(w => w && w.curDur <= 0).length;
+      if (broken > 0) parts.push(`💥${broken}파괴`);
+      $armorNameHud.textContent = parts.length ? parts.join(' ') : '방어구 없음';
+    }
+
+    // 방어구 내구도 행
+    const $row = document.getElementById('armor-dur-row');
+    if (!$row) return;
+    $row.innerHTML = '';
+    const slots = player.equippedSlots || {};
+    for (const [slotId, wrapper] of Object.entries(slots)) {
+      if (!wrapper || !ARMOR_SLOT_ICON[slotId]) continue;
+      const pct    = wrapper.maxDur > 0 ? wrapper.curDur / wrapper.maxDur : 0;
+      const isBroken = wrapper.curDur <= 0;
+      const color  = isBroken ? '#444' : pct > 0.5 ? '#4caf50' : pct > 0.2 ? '#ff9800' : '#f44336';
+
+      const el = document.createElement('div');
+      el.className = 'armor-dur-slot';
+      el.title = `${(wrapper.equip||wrapper).name||slotId} ${wrapper.curDur}/${wrapper.maxDur}`;
+      el.innerHTML =
+        `<span>${ARMOR_SLOT_ICON[slotId]}</span>` +
+        `<div class="armor-dur-bar"><div class="armor-dur-fill" style="width:${Math.max(0,pct*100).toFixed(0)}%;background:${color}"></div></div>` +
+        `<span class="armor-dur-val" style="color:${color}">${isBroken ? '💥' : wrapper.curDur}</span>`;
+      $row.appendChild(el);
+    }
   }
 
   function equipWeapon(invItem) {

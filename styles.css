@@ -401,6 +401,40 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   gap: 0.4rem;
 }
 
+/* ── 방어구 내구도 행 ─────────────────────────────────────── */
+.armor-dur-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 14px;
+}
+.armor-dur-slot {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+.armor-dur-bar {
+  width: 26px;
+  height: 4px;
+  background: #12121e;
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.armor-dur-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.2s, background 0.3s;
+}
+.armor-dur-val {
+  font-size: 0.6rem;
+  min-width: 14px;
+  text-align: right;
+}
+
 .hud-stat {
   display: flex;
   align-items: center;
