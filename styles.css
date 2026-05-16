@@ -444,6 +444,35 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 .rarity-epic      { color: #ab47bc; }
 .rarity-legendary { color: var(--gold); }
 
+/* ── 아이템 툴팁 ─────────────────────────────────────────── */
+#item-tooltip {
+  position: fixed;
+  display: none;
+  background: rgba(8, 8, 24, 0.97);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 7px 13px;
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.6);
+  animation: tipIn 0.12s ease;
+}
+@keyframes tipIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#item-tooltip .tip-name {
+  font-size: 0.88rem;
+  color: var(--gold);
+  margin-bottom: 3px;
+  white-space: nowrap;
+}
+#item-tooltip .tip-desc {
+  font-size: 0.78rem;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
 /* ── 스크롤바 ────────────────────────────────────────────── */
 .equip-list::-webkit-scrollbar { width: 4px; }
 .equip-list::-webkit-scrollbar-track { background: transparent; }

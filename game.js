@@ -58,6 +58,7 @@
     death()    { [0,0.2,0.5].forEach((d,i)=>_sfx({ type:'sawtooth', freq:[220,180,120][i], duration:0.25, volume:0.35, decay:0.15, delay:d })); },
     stamina()  { _sfx({ type: 'square', freq: 180, freq2: 160, duration: 0.08, volume: 0.2, decay: 0.05 }); },
     counter()  { _sfx({ type: 'sawtooth', freq: 440, freq2: 660, duration: 0.12, volume: 0.4, decay: 0.05 }); _noise({ duration: 0.08, volume: 0.3, freq: 600 }); },
+    run()      { _sfx({ type: 'sine', freq: 700, freq2: 900, duration: 0.06, volume: 0.22, decay: 0.04 }); },
   };
 
   // ── BGM (던전 분위기 루프) ────────────────────────────────────
@@ -193,11 +194,15 @@
   const STA_CTR_COST = 13;   // 반격 시 소모
   const STA_REGEN    = 15;   // 초당 회복량
 
-  const MOVE_BASE_MS = 220;  // 기본 이동 쿨다운 (ms)
-  const TELEGRAPH_MS = 700;  // 적 공격 예고 시간 (ms)
-  const CTR_START    = 140;  // 반격 가능 시작 (ms)
-  const CTR_END      = 570;  // 반격 가능 종료 (ms)
-  const PERF_END     = 390;  // 완벽 반격 종료 (ms) — CTR_START~PERF_END
+  const MOVE_BASE_MS  = 220;  // 기본 이동 쿨다운 (ms)
+  const TELEGRAPH_MS  = 700;  // 적 공격 예고 시간 (ms)
+  const CTR_START     = 140;  // 반격 가능 시작 (ms)
+  const CTR_END       = 570;  // 반격 가능 종료 (ms)
+  const PERF_END      = 390;  // 완벽 반격 종료 (ms) — CTR_START~PERF_END
+  const RUN_DOUBLE_MS = 320;  // 달리기 더블 입력 감지 창 (ms)
+  const RUN_DURATION  = 1800; // 달리기 지속 시간 (ms)
+  const RUN_DELAY_MUL = 0.50; // 달리기 시 이동 쿨다운 배율
+  const STA_RUN_COST  = 3;    // 달리기 한 걸음당 스태미나 소모
 
   // 타일 종류
   const T = { WALL: 0, FLOOR: 1, STAIRS: 2, CHEST: 3, PORTAL: 4 };
@@ -230,6 +235,9 @@
   // ── 게임 상태 변수 ─────────────────────────────────────────────
   let canvas, ctx, animId;
   let gameState = 'equip_select'; // equip_select | playing | dead
+  let _invKey = '';    // 인벤토리 변경 감지용 캐시 키
+  let $tooltip = null; // PC 툴팁 엘리먼트
+  let _lastDirKey = null, _lastDirAt = 0; // 더블 방향 입력 감지
   let floor, dungeon, effects, frameCount, isRestFloor;
   let camX, camY, camTX, camTY, lastFrameAt, hudDirty;
 
@@ -245,10 +253,13 @@
     durability: 0, durabilityMax: 0,
     durBroken: false,
     inventory: [],
-    shieldActive: false,
+    shieldStacks: 0,
+    speedBonus: 0,
+    curseActive: false,
     powerBonus: 0,
     xp: 0, kills: 0,
     stamina: STA_MAX,
+    runUntil: 0,
     // Module durability tracking: moduleId → current durability
     moduleDurabilities: {},
     // Synergy-derived decay multiplier (1.0 = normal)
@@ -257,7 +268,7 @@
 
   // ── DOM 참조 ───────────────────────────────────────────────────
   let $screenEquip, $screenGame, $screenDead;
-  let $equipList, $equipStatus, $btnBare, $btnContinue;
+  let $equipList, $equipStatus, $btnBare;
   let $hpBar, $hpText, $durBar, $durText, $staBar, $staText;
   let $floorLbl, $equipNameHud, $armorNameHud, $itemSlots;
   let $rpPrompt, $rpBar, $rpCounter, $toast;
@@ -475,7 +486,22 @@
   function tryMove(dx, dy) {
     if (gameState !== 'playing') return;
     const now = performance.now();
-    if (now - player.lastMoveAt < player.moveDelay) return;
+    const isRunning = now < player.runUntil;
+    const baseDelay = player.speedBonus > 0
+      ? Math.max(80, Math.round(player.moveDelay * (1 - player.speedBonus)))
+      : player.moveDelay;
+    const effDelay = isRunning ? Math.max(70, Math.round(baseDelay * RUN_DELAY_MUL)) : baseDelay;
+    if (now - player.lastMoveAt < effDelay) return;
+
+    // 달리기 스태미나 소모
+    if (isRunning) {
+      if (player.stamina < STA_RUN_COST) {
+        player.runUntil = 0; // 스태미나 부족 → 달리기 종료
+      } else {
+        player.stamina -= STA_RUN_COST;
+        hudDirty = true;
+      }
+    }
 
     const nx = player.gx + dx, ny = player.gy + dy;
     if (nx < 0 || nx >= DW || ny < 0 || ny >= DH) return;
@@ -537,7 +563,9 @@
 
   function openChest(x, y) {
     dungeon.grid[y][x] = T.FLOOR;
-    const t = Math.random() < 0.55 ? 'potion' : 'repair';
+    const CHEST_POOL = ['potion', 'potion', 'repair', 'power', 'shield',
+                        'potion_big', 'repair_full', 'speed', 'freeze', 'bomb', 'power_big'];
+    const t = CHEST_POOL[Math.floor(Math.random() * CHEST_POOL.length)];
     player.inventory.push({ type:t, def:IDEF[t] });
     toast(`📦 ${IDEF[t].emoji} ${IDEF[t].name} 발견!`);
     hudDirty = true;
@@ -565,6 +593,20 @@
         toast('🧪 HP 30% 회복!');
         break;
       }
+      case 'heal_big': {
+        const h = Math.round(player.maxHp * 0.55);
+        player.hp = Math.min(player.maxHp, player.hp + h);
+        spawnFx(player.px+TS/2, player.py, `+${h} HP`, '#4caf50');
+        toast('🫙 HP 55% 회복!');
+        break;
+      }
+      case 'heal_full': {
+        const h = player.maxHp - player.hp;
+        player.hp = player.maxHp;
+        spawnFx(player.px+TS/2, player.py, `+${h} HP`, '#4caf50');
+        toast('✨ HP 완전 회복!');
+        break;
+      }
       case 'repair': {
         const rep = Math.min(20, player.durabilityMax - player.durability);
         player.durability = Math.min(player.durabilityMax, player.durability + 20);
@@ -584,16 +626,96 @@
         spawnFx(player.px+TS/2, player.py, `수리 +${Math.max(0,rep)}`, '#2196f3');
         break;
       }
+      case 'repair_full': {
+        const rep2 = player.durabilityMax - player.durability;
+        player.durability = player.durabilityMax;
+        const activeEq2 = player.inventory.find(it => it.type === 'equip' && it.active);
+        if (activeEq2) activeEq2.curDur = player.durability;
+        if (player.durBroken && player.durability > 0) {
+          player.durBroken = false;
+          const ws2 = player.equipment?.stats || {};
+          const a2 = calcArmorTotals();
+          player.baseAtk = 5 + a2.atk + (ws2.attackBonus  || 0);
+          player.baseDef = a2.def +      (ws2.defenseBonus || 0);
+          toast('🔩 완전 수리! 능력치 복구');
+        } else {
+          toast(`🔩 내구도 완전 회복! (+${Math.max(0, rep2)})`);
+        }
+        spawnFx(player.px+TS/2, player.py, '완전 수리!', '#2196f3');
+        break;
+      }
       case 'power': {
         player.powerBonus += 8;
         toast('💠 공격력 +8 (이번 층)');
         spawnFx(player.px+TS/2, player.py, '공격력 +8!', '#7c4dff');
         break;
       }
+      case 'power_big': {
+        player.powerBonus += 15;
+        toast('💪 공격력 +15 (이번 층)');
+        spawnFx(player.px+TS/2, player.py, '공격력 +15!', '#7c4dff');
+        break;
+      }
       case 'shield': {
-        player.shieldActive = true;
+        player.shieldStacks = Math.max(player.shieldStacks, 1);
         toast('📜 다음 피해 무효 준비!');
         spawnFx(player.px+TS/2, player.py, '방어막!', '#2196f3');
+        break;
+      }
+      case 'shield_big': {
+        player.shieldStacks = Math.max(player.shieldStacks, 3);
+        toast('🛡️ 다음 피해 3회 무효!');
+        spawnFx(player.px+TS/2, player.py, '철벽 방어!', '#2196f3');
+        break;
+      }
+      case 'bomb': {
+        const BOMB_R = 3;
+        const bombDmg = Math.round(player.baseAtk * 1.5 + 10);
+        let bombed = 0;
+        for (const e of dungeon.enemies) {
+          if (e.dead) continue;
+          if (Math.abs(e.gx - player.gx) + Math.abs(e.gy - player.gy) <= BOMB_R) {
+            e.hp -= bombDmg;
+            spawnFx(e.px+TS/2, e.py, `-${bombDmg}🔥`, '#ff5722');
+            if (e.hp <= 0) killEnemy(e);
+            bombed++;
+          }
+        }
+        toast(`💣 폭발! ${bombed}마리 피격`);
+        SFX.counter();
+        break;
+      }
+      case 'freeze': {
+        const nowF = performance.now();
+        let frozen = 0;
+        for (const e of dungeon.enemies) {
+          if (e.dead) continue;
+          e.state = 'stunned';
+          e.stunnedUntil = nowF + 2000;
+          spawnFx(e.px+TS/2, e.py, '❄️', '#90caf9', 1200);
+          frozen++;
+        }
+        toast(`❄️ 빙결! ${frozen}마리 기절`);
+        break;
+      }
+      case 'speed': {
+        player.speedBonus = Math.min(0.5, player.speedBonus + 0.25);
+        toast('💨 이동 속도 +25% (이번 층)');
+        spawnFx(player.px+TS/2, player.py, '질풍!', '#80cbc4');
+        break;
+      }
+      case 'curse': {
+        player.curseActive = true;
+        toast('📿 저주! 이번 층 적 피해 -30%');
+        spawnFx(player.px+TS/2, player.py, '저주 발동!', '#ce93d8');
+        break;
+      }
+      case 'reveal': {
+        for (let ry = 0; ry < DH; ry++)
+          for (let rx = 0; rx < DW; rx++)
+            dungeon.revealed[ry][rx] = 1;
+        toast('🗺️ 지도 전체 공개!');
+        spawnFx(player.px+TS/2, player.py, '지도 공개!', '#fff176');
         break;
       }
     }
@@ -770,16 +892,18 @@
   // 플레이어가 공격 맞음
   function hitPlayer(enemy) {
     // 방어막 있으면 무효
-    if (player.shieldActive) {
-      player.shieldActive = false;
-      spawnFx(player.px+TS/2, player.py-10, '차단!', '#2196f3');
+    if (player.shieldStacks > 0) {
+      player.shieldStacks--;
+      const remain = player.shieldStacks > 0 ? ` (${player.shieldStacks}회 남음)` : '';
+      spawnFx(player.px+TS/2, player.py-10, '차단!' + remain, '#2196f3');
       SFX.shield();
       enemy.state='cooldown'; enemy.nextMoveAt = performance.now()+500;
       hudDirty = true;
       return;
     }
 
-    const dmg = Math.max(1, enemy.atk - player.baseDef);
+    const atkVal = player.curseActive ? Math.max(1, Math.floor(enemy.atk * 0.7)) : enemy.atk;
+    const dmg = Math.max(1, atkVal - player.baseDef);
     player.hp -= dmg;
     SFX.playerHit();
     spawnFx(player.px+TS/2, player.py-10, `-${dmg}`, '#f44336');
@@ -907,6 +1031,8 @@
 
   function enterRestFloor() {
     player.powerBonus = 0;
+    player.speedBonus = 0;
+    player.curseActive = false;
     player.hp = Math.min(player.maxHp, player.hp + Math.round(player.maxHp * 0.25));
     isRestFloor = true;
     dungeon = generateRestFloor();
@@ -1323,20 +1449,80 @@
     // ── 플레이어 ─────────────────────────────────────────────
     {
       const sx=player.px-camX, sy=player.py-camY;
+      const hx = sx + TS/2; // 가로 중심
 
       // 방어막 글로우
-      if (player.shieldActive) {
+      if (player.shieldStacks > 0) {
         ctx.strokeStyle='#42a5f5'; ctx.lineWidth=3;
-        ctx.beginPath(); ctx.arc(sx+TS/2,sy+TS/2,TS/2,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(hx,sy+TS/2,TS/2,0,Math.PI*2); ctx.stroke();
+      }
+
+      // 달리기 글로우
+      if (now < player.runUntil) {
+        ctx.strokeStyle='rgba(128,203,196,0.55)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(hx,sy+TS/2,TS/2+2,0,Math.PI*2); ctx.stroke();
       }
 
       // 몸체 원
       ctx.fillStyle = player.durBroken ? '#200808' : '#0f0f2a';
-      ctx.beginPath(); ctx.arc(sx+TS/2,sy+TS/2,TS/2-3,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx,sy+TS/2,TS/2-3,0,Math.PI*2); ctx.fill();
 
       // 이모지
       ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('🧙',sx+TS/2,sy+TS/2+1);
+      ctx.fillText('🧙',hx,sy+TS/2+1);
+
+      // ── 머리 위 HP 바 ───────────────────────────────────
+      const BAR_W = 32, BAR_H = 4;
+      const hpBarTop = sy - 9;
+      const hpRatio  = player.maxHp > 0 ? Math.max(0, player.hp / player.maxHp) : 0;
+      // 배경
+      ctx.fillStyle = 'rgba(8,8,20,0.75)';
+      ctx.fillRect(hx - BAR_W/2 - 1, hpBarTop - 1, BAR_W + 2, BAR_H + 2);
+      // 바
+      ctx.fillStyle = hpRatio > 0.5 ? '#4caf50' : hpRatio > 0.25 ? '#ff9800' : '#f44336';
+      ctx.fillRect(hx - BAR_W/2, hpBarTop, Math.round(BAR_W * hpRatio), BAR_H);
+      // 텍스트
+      ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillStyle = 'rgba(210,210,255,0.85)';
+      ctx.fillText(`${player.hp}/${player.maxHp}`, hx, hpBarTop);
+
+      // ── 머리 위 카운터 타이밍 바 ─────────────────────────
+      const telegraphingH = dungeon.enemies.filter(e => e.state === 'telegraph' && !e.dead);
+      if (telegraphingH.length > 0) {
+        const mostH = telegraphingH.reduce((a, b) =>
+          (now - b.telegraphStart) > (now - a.telegraphStart) ? b : a
+        );
+        const elH    = now - mostH.telegraphStart;
+        const inWinH = elH >= CTR_START && elH <= CTR_END;
+        const inPerfH= elH >= CTR_START && elH <= PERF_END;
+
+        const CB_W = 36, CB_H = 5;
+        const cbTop = hpBarTop - 12;
+
+        // 존 배경 (회색 → 금색 → 주황 → 회색 구간)
+        const z1 = Math.round(CB_W * CTR_START / TELEGRAPH_MS);
+        const z2 = Math.round(CB_W * PERF_END   / TELEGRAPH_MS);
+        const z3 = Math.round(CB_W * CTR_END     / TELEGRAPH_MS);
+        ctx.fillStyle='rgba(8,8,20,0.82)'; ctx.fillRect(hx-CB_W/2-1, cbTop-1, CB_W+2, CB_H+2);
+        ctx.fillStyle='rgba(160,50,50,0.35)';  ctx.fillRect(hx-CB_W/2,    cbTop, z1,       CB_H);
+        ctx.fillStyle='rgba(245,197,24,0.40)';  ctx.fillRect(hx-CB_W/2+z1, cbTop, z2-z1,   CB_H);
+        ctx.fillStyle='rgba(255,152,0,0.35)';   ctx.fillRect(hx-CB_W/2+z2, cbTop, z3-z2,   CB_H);
+        ctx.fillStyle='rgba(160,50,50,0.35)';   ctx.fillRect(hx-CB_W/2+z3, cbTop, CB_W-z3, CB_H);
+
+        // 현재 경과 커서
+        const cursorX = hx - CB_W/2 + Math.min(CB_W, Math.round(CB_W * elH / TELEGRAPH_MS));
+        const barColor = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(200,80,80,0.7)';
+        ctx.fillStyle = barColor;
+        ctx.fillRect(Math.max(hx - CB_W/2, cursorX - 2), cbTop, Math.min(4, CB_W - (cursorX - (hx-CB_W/2))), CB_H);
+
+        // 라벨
+        ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        const pulse = inPerfH ? (0.7 + Math.sin(now * 0.02) * 0.3) : 1;
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(180,130,130,0.8)';
+        ctx.fillText(inPerfH ? '⚡완벽!' : inWinH ? '⚡반격!' : '준비', hx, cbTop);
+        ctx.globalAlpha = 1;
+      }
     }
 
     // ── 플로팅 이펙트 ─────────────────────────────────────────
@@ -1379,6 +1565,38 @@
   }
 
   // ══════════════════════════════════════════════════════════════
+  // 아이템 툴팁 (PC 마우스 오버)
+  // ══════════════════════════════════════════════════════════════
+  function initTooltip() {
+    $tooltip = document.createElement('div');
+    $tooltip.id = 'item-tooltip';
+    $tooltip.innerHTML = '<div class="tip-name"></div><div class="tip-desc"></div>';
+    document.body.appendChild($tooltip);
+  }
+
+  function showTooltip(btn, name, desc) {
+    if (!$tooltip) return;
+    $tooltip.querySelector('.tip-name').textContent = name;
+    $tooltip.querySelector('.tip-desc').textContent = desc;
+    $tooltip.style.display = 'block';
+    // 위치: 버튼 위 중앙
+    const rect = btn.getBoundingClientRect();
+    const tw = $tooltip.offsetWidth;
+    const th = $tooltip.offsetHeight;
+    let left = rect.left + rect.width / 2 - tw / 2;
+    let top  = rect.top - th - 8;
+    if (left < 4) left = 4;
+    if (left + tw > window.innerWidth - 4) left = window.innerWidth - tw - 4;
+    if (top < 4) top = rect.bottom + 8;
+    $tooltip.style.left = left + 'px';
+    $tooltip.style.top  = top  + 'px';
+  }
+
+  function hideTooltip() {
+    if ($tooltip) $tooltip.style.display = 'none';
+  }
+
+  // ══════════════════════════════════════════════════════════════
   // HUD 업데이트
   // ══════════════════════════════════════════════════════════════
   function updateHud() {
@@ -1410,39 +1628,52 @@
     $staBar.style.background = staPct > 50 ? '#ffca28' : staPct > 25 ? '#ff9800' : '#f44336';
     $staText.textContent = Math.floor(player.stamina);
 
-    // 아이템 슬롯 — 장비(개별) + 소모품(묶음)
-    $itemSlots.innerHTML = '';
+    // 아이템 슬롯 — 인벤토리가 실제로 바뀔 때만 재생성 (매 프레임 파괴하면 클릭 이벤트가 안 됨)
+    const newInvKey = player.inventory.map(it => it.type === 'equip'
+      ? `e:${it.equip?.id}:${it.active?1:0}:${it.curDur}`
+      : it.type
+    ).join('|');
 
-    for (const it of player.inventory) {
-      if (it.type !== 'equip') continue;
-      const btn = document.createElement('button');
-      btn.className = 'item-btn' + (it.active ? ' equip-active' : ' equip-inactive');
-      btn.title = `${it.equip.name} — 탭하여 장착\n내구: ${it.curDur}/${it.maxDur}`;
-      const pa = it.equip.pixelArt || it.equip.pixel_art;
-      if (pa?.imageDataUrl) {
-        btn.innerHTML = `<img src="${pa.imageDataUrl}" style="width:34px;height:34px;image-rendering:pixelated">`;
-      } else {
-        btn.textContent = it.equip.itemEmoji || '⚔️';
+    if (newInvKey !== _invKey) {
+      _invKey = newInvKey;
+      hideTooltip();
+      $itemSlots.innerHTML = '';
+
+      for (const it of player.inventory) {
+        if (it.type !== 'equip') continue;
+        const btn = document.createElement('button');
+        btn.className = 'item-btn' + (it.active ? ' equip-active' : ' equip-inactive');
+        const pa = it.equip.pixelArt || it.equip.pixel_art;
+        if (pa?.imageDataUrl) {
+          btn.innerHTML = `<img src="${pa.imageDataUrl}" style="width:34px;height:34px;image-rendering:pixelated">`;
+        } else {
+          btn.textContent = it.equip.itemEmoji || '⚔️';
+        }
+        const tipName = `${it.equip.name}  (내구 ${it.curDur}/${it.maxDur})`;
+        const tipDesc = it.active ? '현재 장착 중' : '클릭하여 장착';
+        btn.addEventListener('mouseenter', () => showTooltip(btn, tipName, tipDesc));
+        btn.addEventListener('mouseleave', hideTooltip);
+        btn.addEventListener('click', () => { if (!it.active) { equipWeapon(it); hudDirty = true; } });
+        btn.addEventListener('touchstart', (ev) => { ev.preventDefault(); if (!it.active) { equipWeapon(it); hudDirty = true; } }, { passive:false });
+        $itemSlots.appendChild(btn);
       }
-      btn.addEventListener('click', () => { if (!it.active) { equipWeapon(it); hudDirty = true; } });
-      btn.addEventListener('touchstart', (ev) => { ev.preventDefault(); if (!it.active) { equipWeapon(it); hudDirty = true; } }, { passive:false });
-      $itemSlots.appendChild(btn);
-    }
 
-    const grouped = {};
-    for (const it of player.inventory) {
-      if (it.type === 'equip') continue;
-      if (!grouped[it.type]) grouped[it.type] = { def:it.def, count:0 };
-      grouped[it.type].count++;
-    }
-    for (const [type, g] of Object.entries(grouped)) {
-      const btn = document.createElement('button');
-      btn.className = 'item-btn';
-      btn.title = `${g.def.name} — ${g.def.desc}`;
-      btn.innerHTML = `${g.def.emoji}<span class="item-count">${g.count>1?g.count:''}</span>`;
-      btn.addEventListener('click', () => useItem(type));
-      btn.addEventListener('touchstart', (ev) => { ev.preventDefault(); useItem(type); }, { passive:false });
-      $itemSlots.appendChild(btn);
+      const grouped = {};
+      for (const it of player.inventory) {
+        if (it.type === 'equip') continue;
+        if (!grouped[it.type]) grouped[it.type] = { def:it.def, count:0 };
+        grouped[it.type].count++;
+      }
+      for (const [type, g] of Object.entries(grouped)) {
+        const btn = document.createElement('button');
+        btn.className = 'item-btn';
+        btn.innerHTML = `${g.def.emoji}<span class="item-count">${g.count>1?g.count:''}</span>`;
+        btn.addEventListener('mouseenter', () => showTooltip(btn, g.def.name, g.def.desc));
+        btn.addEventListener('mouseleave', hideTooltip);
+        btn.addEventListener('click', () => useItem(type));
+        btn.addEventListener('touchstart', (ev) => { ev.preventDefault(); useItem(type); }, { passive:false });
+        $itemSlots.appendChild(btn);
+      }
     }
   }
 
@@ -1560,7 +1791,8 @@
         baseAtk: player.baseAtk, baseDef: player.baseDef,
         moveDelay: player.moveDelay,
         durability: player.durability, durabilityMax: player.durabilityMax,
-        durBroken: player.durBroken, shieldActive: player.shieldActive,
+        durBroken: player.durBroken, shieldStacks: player.shieldStacks,
+        speedBonus: player.speedBonus, curseActive: player.curseActive,
         powerBonus: player.powerBonus,
         xp: player.xp, kills: player.kills,
         stamina: player.stamina,
@@ -1704,7 +1936,7 @@
   function startGame(equipList, slotEquips) {
     if (animId) { cancelAnimationFrame(animId); animId=null; }
     clearSave();
-    floor = 1; isRestFloor = false; effects = [];
+    floor = 1; isRestFloor = false; effects = []; _invKey = ''; _lastDirKey = null;
 
     // 기본 스탯 초기화
     player.equipment     = null;
@@ -1714,8 +1946,11 @@
     player.moveDelay     = MOVE_BASE_MS;
     player.durability    = 0; player.durabilityMax = 0;
     player.durBroken     = false;
-    player.shieldActive  = false;
+    player.shieldStacks  = 0;
+    player.speedBonus    = 0;
+    player.curseActive   = false;
     player.powerBonus    = 0;
+    player.runUntil      = 0;
     player.inventory     = [];
     player.xp=0; player.kills=0;
     player.stamina = STA_MAX;
@@ -1966,6 +2201,14 @@
   // 입력 설정
   // ══════════════════════════════════════════════════════════════
   function setupInput() {
+    // 방향키 → 달리기 더블 입력 감지 맵
+    const DIR_MAP = {
+      ArrowUp:'u', w:'u', W:'u',
+      ArrowDown:'d', s:'d', S:'d',
+      ArrowLeft:'l', a:'l', A:'l',
+      ArrowRight:'r', d:'r', D:'r',
+    };
+
     // 키보드
     document.addEventListener('keydown', (ev) => {
       keys[ev.key] = true;
@@ -1978,16 +2221,47 @@
                 || player.inventory[0]?.type;
         if (t) useItem(t);
       }
+
+      // 같은 방향 더블 입력 → 달리기
+      if (!ev.repeat && gameState === 'playing') {
+        const dir = DIR_MAP[ev.key];
+        if (dir) {
+          const now2 = performance.now();
+          if (dir === _lastDirKey && now2 - _lastDirAt < RUN_DOUBLE_MS) {
+            player.runUntil = now2 + RUN_DURATION;
+            _lastDirKey = null; // 연속 트리거 방지
+            SFX.run();
+            spawnFx(player.px + TS/2, player.py + TS/2, '💨', '#80cbc4', 500);
+          } else {
+            _lastDirKey = dir;
+            _lastDirAt  = now2;
+          }
+        }
+      }
     });
     document.addEventListener('keyup', (ev) => { keys[ev.key]=false; });
 
     // 모바일 D패드 (이동 버튼)
     $dpad.querySelectorAll('[data-dx]').forEach(btn => {
       const dx=parseInt(btn.dataset.dx), dy=parseInt(btn.dataset.dy);
+      const dirKey = `${dx},${dy}`;
       let holdTimer=null;
 
       const start=(ev)=>{
         ev.preventDefault();
+        // 더블 탭 → 달리기
+        if (gameState === 'playing') {
+          const now2 = performance.now();
+          if (dirKey === _lastDirKey && now2 - _lastDirAt < RUN_DOUBLE_MS) {
+            player.runUntil = now2 + RUN_DURATION;
+            _lastDirKey = null;
+            SFX.run();
+            spawnFx(player.px + TS/2, player.py + TS/2, '💨', '#80cbc4', 500);
+          } else {
+            _lastDirKey = dirKey;
+            _lastDirAt  = now2;
+          }
+        }
         tryMove(dx,dy);
         holdTimer=setInterval(()=>{ if(gameState==='playing') tryMove(dx,dy); }, 80);
       };
@@ -2005,24 +2279,6 @@
     $btnCounter.addEventListener('click', tryCounter);
     $btnCounter.addEventListener('touchstart',(ev)=>{ ev.preventDefault(); tryCounter(); },{ passive:false });
 
-    // 이어하기 버튼: 서버(또는 localStorage)에 세이브가 있으면 표시
-    fetchSave().then(saved => {
-      if (saved) $btnContinue.classList.remove('hidden');
-    });
-    $btnContinue.addEventListener('click', async () => {
-      const saved = await fetchSave();
-      if (!saved) return;
-      try {
-        applyLoadData(saved);
-        updateFog();
-        updateCamera(); camX = camTX; camY = camTY;
-        setGameState('playing');
-      } catch(err) {
-        console.error('세이브 로드 실패', err);
-        clearSave();
-        $btnContinue.classList.add('hidden');
-      }
-    });
     document.getElementById('btn-enter').addEventListener('click', () => startGame(selectedEquips, selectedSlots));
     $btnBare.addEventListener('click', ()=>startGame(null, {}));
     $btnRestart.addEventListener('click', ()=>{
@@ -2063,7 +2319,6 @@
     $equipList    = document.getElementById('equip-list');
     $equipStatus  = document.getElementById('equip-status');
     $btnBare      = document.getElementById('btn-bare');
-    $btnContinue  = document.getElementById('btn-continue');
     $hpBar        = document.getElementById('hp-bar');
     $hpText       = document.getElementById('hp-text');
     $durBar       = document.getElementById('dur-bar');
@@ -2098,6 +2353,7 @@
       window.visualViewport.addEventListener('resize', () => { updateVh(); resizeCanvas(); });
     }
 
+    initTooltip();
     setupInput();
     loadEquipment();
     setGameState('equip_select');

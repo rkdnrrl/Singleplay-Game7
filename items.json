@@ -1,8 +1,18 @@
 {
   "items": {
-    "potion": { "name": "회복 포션",     "emoji": "🧪", "desc": "HP 30% 회복",        "action": "heal"   },
-    "repair": { "name": "수리 키트",     "emoji": "🔧", "desc": "내구도 +20 회복",     "action": "repair" },
-    "power":  { "name": "힘의 결정",     "emoji": "💠", "desc": "이번 층 공격력 +8",   "action": "power"  },
-    "shield": { "name": "방어 두루마리", "emoji": "📜", "desc": "다음 피해 1회 무효",  "action": "shield" }
+    "potion":      { "name": "회복 포션",       "emoji": "🧪", "desc": "HP 30% 회복",             "action": "heal"       },
+    "potion_big":  { "name": "대형 회복 포션",   "emoji": "🫙", "desc": "HP 55% 회복",             "action": "heal_big"   },
+    "elixir":      { "name": "불사의 영약",       "emoji": "✨", "desc": "HP 완전 회복",            "action": "heal_full"  },
+    "repair":      { "name": "수리 키트",         "emoji": "🔧", "desc": "내구도 +20 회복",         "action": "repair"     },
+    "repair_full": { "name": "완전 수리 키트",    "emoji": "🔩", "desc": "내구도 완전 회복",        "action": "repair_full"},
+    "power":       { "name": "힘의 결정",         "emoji": "💠", "desc": "이번 층 공격력 +8",       "action": "power"      },
+    "power_big":   { "name": "전사의 포션",       "emoji": "💪", "desc": "이번 층 공격력 +15",      "action": "power_big"  },
+    "shield":      { "name": "방어 두루마리",     "emoji": "📜", "desc": "다음 피해 1회 무효",      "action": "shield"     },
+    "shield_big":  { "name": "철벽 방어",         "emoji": "🛡️", "desc": "다음 피해 3회 무효",     "action": "shield_big" },
+    "bomb":        { "name": "화염 폭탄",         "emoji": "💣", "desc": "주변 3칸 내 적 전부 공격","action": "bomb"       },
+    "freeze":      { "name": "빙결 두루마리",     "emoji": "❄️", "desc": "모든 적 2초 기절",       "action": "freeze"     },
+    "speed":       { "name": "질풍의 물약",       "emoji": "💨", "desc": "이번 층 이동 속도 +25%",  "action": "speed"      },
+    "curse":       { "name": "저주의 두루마리",   "emoji": "📿", "desc": "이번 층 적 피해 -30%",    "action": "curse"      },
+    "reveal":      { "name": "인식의 두루마리",   "emoji": "🗺️", "desc": "던전 지도 전체 공개",    "action": "reveal"     }
   }
 }

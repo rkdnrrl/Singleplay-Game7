@@ -1,94 +1,179 @@
 {
   "enemies": [
     {
-      "id": "slime",    "name": "슬라임",      "emoji": "🟢",
-      "hp": 8,  "atk": 3,  "def": 0, "mvMs": 700,  "xp": 5,
+      "id": "slime",      "name": "슬라임",        "emoji": "🟢",
+      "hp": 8,   "atk": 3,  "def": 0, "mvMs": 700,  "xp": 5,
       "minF": 1, "maxF": 4, "pattern": "melee",
       "desc": "느리고 약하다. 근접 공격만 한다."
     },
     {
-      "id": "bat",      "name": "박쥐",        "emoji": "🦇",
-      "hp": 10, "atk": 5,  "def": 0, "mvMs": 300,  "xp": 8,
+      "id": "bat",        "name": "박쥐",          "emoji": "🦇",
+      "hp": 10,  "atk": 5,  "def": 0, "mvMs": 300,  "xp": 8,
       "minF": 1, "maxF": 6, "pattern": "coward",
       "desc": "빠르게 달려들었다가 즉시 뒤로 물러난다."
     },
     {
-      "id": "goblin",   "name": "고블린",      "emoji": "👺",
-      "hp": 15, "atk": 6,  "def": 1, "mvMs": 540,  "xp": 10,
+      "id": "goblin",     "name": "고블린",        "emoji": "👺",
+      "hp": 15,  "atk": 6,  "def": 1, "mvMs": 540,  "xp": 10,
       "minF": 1, "maxF": 7, "pattern": "melee",
       "desc": "영리하게 플레이어를 추격한다."
     },
     {
-      "id": "zombie",   "name": "좀비",        "emoji": "🧟",
-      "hp": 35, "atk": 10, "def": 1, "mvMs": 1300, "xp": 14,
+      "id": "zombie",     "name": "좀비",          "emoji": "🧟",
+      "hp": 35,  "atk": 10, "def": 1, "mvMs": 1300, "xp": 14,
       "minF": 2, "maxF": 7, "pattern": "melee",
       "desc": "매우 느리지만 HP가 높다."
     },
     {
-      "id": "garcher",  "name": "고블린 궁수", "emoji": "🏹",
-      "hp": 12, "atk": 8,  "def": 1, "mvMs": 650,  "xp": 14,
+      "id": "garcher",    "name": "고블린 궁수",   "emoji": "🏹",
+      "hp": 12,  "atk": 8,  "def": 1, "mvMs": 650,  "xp": 14,
       "minF": 2, "maxF": 8, "pattern": "ranged", "range": 4,
       "desc": "4칸 내 일직선에 있으면 화살을 쏜다."
     },
     {
-      "id": "skeleton", "name": "해골",        "emoji": "💀",
-      "hp": 20, "atk": 9,  "def": 2, "mvMs": 740,  "xp": 16,
+      "id": "skeleton",   "name": "해골",          "emoji": "💀",
+      "hp": 20,  "atk": 9,  "def": 2, "mvMs": 740,  "xp": 16,
       "minF": 3, "maxF": 99, "pattern": "melee",
       "desc": "단단한 뼈대로 방어력이 있다."
     },
     {
-      "id": "sarcher",  "name": "해골 궁수",   "emoji": "🎯",
-      "hp": 16, "atk": 12, "def": 1, "mvMs": 820,  "xp": 22,
+      "id": "sarcher",    "name": "해골 궁수",     "emoji": "🎯",
+      "hp": 16,  "atk": 12, "def": 1, "mvMs": 820,  "xp": 22,
       "minF": 4, "maxF": 99, "pattern": "ranged", "range": 5,
       "desc": "5칸 내 일직선에서 강한 화살을 쏜다."
     },
     {
-      "id": "orc",      "name": "오크",        "emoji": "👹",
-      "hp": 32, "atk": 14, "def": 4, "mvMs": 840,  "xp": 26,
+      "id": "orc",        "name": "오크",          "emoji": "👹",
+      "hp": 32,  "atk": 14, "def": 4, "mvMs": 840,  "xp": 26,
       "minF": 5, "maxF": 99, "pattern": "melee",
       "desc": "높은 방어력을 가진 강적."
     },
     {
-      "id": "troll",    "name": "트롤",        "emoji": "🧌",
-      "hp": 55, "atk": 12, "def": 3, "mvMs": 1050, "xp": 30,
+      "id": "troll",      "name": "트롤",          "emoji": "🧌",
+      "hp": 55,  "atk": 12, "def": 3, "mvMs": 1050, "xp": 30,
       "minF": 5, "maxF": 99, "pattern": "regen",
       "desc": "느리지만 3초마다 HP를 회복한다."
     },
     {
-      "id": "wizard",   "name": "마법사",      "emoji": "🧙‍♂️",
-      "hp": 22, "atk": 18, "def": 2, "mvMs": 900,  "xp": 35,
+      "id": "dark_elf",   "name": "어둠 요정",     "emoji": "🧝",
+      "hp": 18,  "atk": 14, "def": 2, "mvMs": 760,  "xp": 28,
+      "minF": 9, "maxF": 99, "pattern": "ranged", "range": 5,
+      "desc": "5칸 내 일직선에서 빠른 화살을 쏜다."
+    },
+    {
+      "id": "wizard",     "name": "마법사",        "emoji": "🧙‍♂️",
+      "hp": 22,  "atk": 18, "def": 2, "mvMs": 900,  "xp": 35,
       "minF": 6, "maxF": 99, "pattern": "ranged", "range": 5,
       "desc": "원거리 마법을 쏜다. HP는 낮지만 공격력이 높다."
     },
     {
-      "id": "demon",    "name": "악마",        "emoji": "😈",
-      "hp": 44, "atk": 20, "def": 6, "mvMs": 600,  "xp": 40,
+      "id": "demon",      "name": "악마",          "emoji": "😈",
+      "hp": 44,  "atk": 20, "def": 6, "mvMs": 600,  "xp": 40,
       "minF": 8, "maxF": 99, "pattern": "rush",
       "desc": "멀리서부터 맹렬히 돌진해온다."
     },
     {
-      "id": "knight",   "name": "암흑기사",    "emoji": "⚔️",
-      "hp": 50, "atk": 22, "def": 8, "mvMs": 700,  "xp": 48,
+      "id": "berserker",  "name": "광전사",        "emoji": "🪓",
+      "hp": 40,  "atk": 24, "def": 3, "mvMs": 540,  "xp": 42,
+      "minF": 11, "maxF": 99, "pattern": "rush",
+      "desc": "고통을 무시하고 빠르게 돌진한다."
+    },
+    {
+      "id": "golem",      "name": "바위 골렘",     "emoji": "🗿",
+      "hp": 80,  "atk": 18, "def": 12, "mvMs": 1200, "xp": 48,
+      "minF": 12, "maxF": 99, "pattern": "melee",
+      "desc": "느리지만 엄청난 방어력을 자랑한다."
+    },
+    {
+      "id": "vampire",    "name": "뱀파이어",      "emoji": "🧛",
+      "hp": 50,  "atk": 22, "def": 5, "mvMs": 650,  "xp": 52,
+      "minF": 13, "maxF": 99, "pattern": "regen",
+      "desc": "3초마다 HP를 흡수하며 회복한다."
+    },
+    {
+      "id": "hellhound",  "name": "지옥개",        "emoji": "🐺",
+      "hp": 35,  "atk": 26, "def": 4, "mvMs": 440,  "xp": 48,
+      "minF": 14, "maxF": 99, "pattern": "rush",
+      "desc": "극도로 빠른 속도로 맹렬히 달려든다."
+    },
+    {
+      "id": "knight",     "name": "암흑기사",      "emoji": "⚔️",
+      "hp": 50,  "atk": 22, "def": 8, "mvMs": 700,  "xp": 48,
       "minF": 9, "maxF": 99, "pattern": "melee",
       "desc": "높은 공격력과 방어력을 모두 갖춘 강적."
     },
     {
-      "id": "bslime",   "name": "대왕슬라임",  "emoji": "💚",
-      "hp": 60, "atk": 11, "def": 4, "mvMs": 900,  "xp": 60,
-      "minF": 5, "maxF": 5, "isBoss": true, "pattern": "melee",
+      "id": "necromancer","name": "강령술사",      "emoji": "🪄",
+      "hp": 28,  "atk": 22, "def": 3, "mvMs": 900,  "xp": 55,
+      "minF": 16, "maxF": 99, "pattern": "ranged", "range": 6,
+      "desc": "6칸 내 일직선에서 암흑 마법을 날린다."
+    },
+    {
+      "id": "shadow",     "name": "그림자",        "emoji": "👤",
+      "hp": 45,  "atk": 28, "def": 5, "mvMs": 490,  "xp": 60,
+      "minF": 18, "maxF": 99, "pattern": "coward",
+      "desc": "강타 후 즉시 도주하는 암살자."
+    },
+    {
+      "id": "lich",       "name": "리치",          "emoji": "💠",
+      "hp": 55,  "atk": 30, "def": 8, "mvMs": 950,  "xp": 70,
+      "minF": 20, "maxF": 99, "pattern": "ranged", "range": 6,
+      "desc": "강력한 마법 공격으로 멀리서 공격한다."
+    },
+    {
+      "id": "dragon",     "name": "어린 드래곤",   "emoji": "🐲",
+      "hp": 70,  "atk": 32, "def": 10, "mvMs": 750,  "xp": 80,
+      "minF": 22, "maxF": 99, "pattern": "rush",
+      "desc": "먼 거리에서도 맹렬히 돌진하는 드래곤."
+    },
+    {
+      "id": "titan",      "name": "타이탄",        "emoji": "🗼",
+      "hp": 120, "atk": 35, "def": 15, "mvMs": 1300, "xp": 90,
+      "minF": 25, "maxF": 99, "pattern": "regen",
+      "desc": "거대한 몸집으로 3초마다 HP를 회복한다."
+    },
+
+    {
+      "id": "bslime",     "name": "대왕슬라임",    "emoji": "💚",
+      "hp": 60,  "atk": 11, "def": 4,  "mvMs": 900,  "xp": 60,
+      "minF": 5,  "maxF": 5,  "isBoss": true, "pattern": "melee",
       "desc": "B5F 보스."
     },
     {
-      "id": "btroll",   "name": "고대 트롤",   "emoji": "👾",
-      "hp": 100, "atk": 20, "def": 8, "mvMs": 1100, "xp": 100,
+      "id": "btroll",     "name": "고대 트롤",     "emoji": "👾",
+      "hp": 100, "atk": 20, "def": 8,  "mvMs": 1100, "xp": 100,
       "minF": 10, "maxF": 10, "isBoss": true, "pattern": "regen",
       "desc": "B10F 보스. 강력한 HP 재생 능력."
     },
     {
-      "id": "bdemon",   "name": "암흑군주",    "emoji": "👿",
+      "id": "bdemon",     "name": "암흑군주",      "emoji": "👿",
       "hp": 110, "atk": 24, "def": 10, "mvMs": 1050, "xp": 120,
       "minF": 15, "maxF": 15, "isBoss": true, "pattern": "ranged", "range": 4,
       "desc": "B15F 보스. 원거리 암흑 마법을 쏜다."
+    },
+    {
+      "id": "bdragon",    "name": "화염 드래곤",   "emoji": "🐉",
+      "hp": 130, "atk": 28, "def": 12, "mvMs": 800,  "xp": 150,
+      "minF": 20, "maxF": 20, "isBoss": true, "pattern": "rush",
+      "desc": "B20F 보스. 멀리서부터 불꽃을 내뿜으며 돌진."
+    },
+    {
+      "id": "bgolem",     "name": "마왕 골렘",     "emoji": "🪨",
+      "hp": 160, "atk": 30, "def": 20, "mvMs": 1400, "xp": 180,
+      "minF": 25, "maxF": 25, "isBoss": true, "pattern": "regen",
+      "desc": "B25F 보스. 철갑 방어와 HP 재생을 겸비."
+    },
+    {
+      "id": "blich",      "name": "리치 왕",       "emoji": "💀",
+      "hp": 180, "atk": 35, "def": 15, "mvMs": 1000, "xp": 220,
+      "minF": 30, "maxF": 30, "isBoss": true, "pattern": "ranged", "range": 7,
+      "desc": "B30F 보스. 7칸 사정거리의 강력한 마법."
+    },
+    {
+      "id": "bdarkgod",   "name": "던전 군주",     "emoji": "😱",
+      "hp": 220, "atk": 40, "def": 18, "mvMs": 900,  "xp": 300,
+      "minF": 35, "maxF": 99, "isBoss": true, "pattern": "rush",
+      "desc": "B35F+ 보스. 던전 최강의 지배자."
     }
   ]
 }
