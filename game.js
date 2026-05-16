@@ -405,7 +405,8 @@
     player.px = player.gx * TS; player.py = player.gy * TS;
 
     // 적 스폰
-    const scale   = 1 + (f-1) * 0.15;
+    // 층수 기반 난이도 곡선: 초반 완만 → 이후 가파름
+    const scale = 1 + (f - 1) * 0.12 + Math.pow(Math.max(0, f - 10), 1.3) * 0.02;
     const valid   = EDEFS.filter(d => !d.isBoss && f >= d.minF && f <= d.maxF);
     const enemies = [];
 
@@ -413,7 +414,8 @@
       const r = rooms[i];
       if (grid[r.cy][r.cx] === T.STAIRS) continue;
 
-      const count = Math.min(10, 4 + Math.floor(Math.random()*4) + Math.floor(f/3));
+      // 층이 깊을수록 방당 몬스터 수 증가 (최대 12마리)
+      const count = Math.min(12, 3 + Math.floor(Math.random()*3) + Math.floor(f/2));
       for (let n = 0; n < count && valid.length; n++) {
         const def = valid[Math.floor(Math.random() * valid.length)];
         let ex, ey, tries = 0;
@@ -652,12 +654,43 @@
     hudDirty = true;
   }
 
+  // 드롭 확률표: [ 확률(0~1), 아이템 타입 ]
+  const DROP_TABLE = [
+    [0.25, 'potion'],
+    [0.10, 'repair'],
+    [0.07, 'power'],
+    [0.06, 'shield'],
+    [0.05, 'potion_big'],
+    [0.03, 'freeze'],
+    [0.02, 'bomb'],
+    [0.01, 'power_big'],
+  ];
+
+  function rollEnemyDrop(enemy) {
+    // 수문장은 드롭 확률 2배
+    const mul = enemy.isGuardian ? 2 : 1;
+    for (const [chance, type] of DROP_TABLE) {
+      if (Math.random() < chance * mul && IDEF[type]) return type;
+    }
+    return null;
+  }
+
   function killEnemy(enemy) {
     enemy.dead = true;
     player.kills++;
     player.xp += enemy.def.xp;
     SFX.kill();
     spawnFx(enemy.px+TS/2, enemy.py-10, `+${enemy.def.xp}XP`, '#ffeb3b', 1200);
+
+    // 아이템 드롭
+    const drop = rollEnemyDrop(enemy);
+    if (drop) {
+      const def = IDEF[drop];
+      player.inventory.push({ type: drop, def });
+      spawnFx(enemy.px+TS/2, enemy.py-26, `${def.emoji} 드롭!`, '#a5d6a7', 1400);
+      SFX.pickup();
+    }
+
     hudDirty = true;
   }
 
@@ -1223,7 +1256,14 @@
     dungeon = generateDungeon(floor);
     updateFog();
     updateCamera();
-    toast(`🏰 B${floor}F 도착!`);
+
+    if (floor % 5 === 0) {
+      toast(`⚠️ B${floor}F — 보스 층! 수문장이 강력합니다`);
+    } else if (floor % 5 === 4) {
+      toast(`🏰 B${floor}F 도착! 다음 층은 보스 층입니다`);
+    } else {
+      toast(`🏰 B${floor}F 도착!`);
+    }
     SFX.stairs();
     hudDirty = true;
   }
@@ -1988,16 +2028,29 @@
       stopBGM();
     }
 
-    if (s === 'dead') {
-      SFX.death();
-      if (animId) { cancelAnimationFrame(animId); animId=null; }
-      $deadStats.textContent =
-        `B${floor}F 에서 전투 불능\n처치 ${player.kills}마리  ·  경험치 ${player.xp}`;
-    }
-    if (s === 'escaped') {
-      const el = document.getElementById('escaped-stats');
-      if (el) el.textContent =
-        `B${floor}F 에서 탈출 성공\n처치 ${player.kills}마리  ·  경험치 ${player.xp}`;
+    if (s === 'dead' || s === 'escaped') {
+      if (s === 'dead') {
+        SFX.death();
+        if (animId) { cancelAnimationFrame(animId); animId=null; }
+      }
+
+      // 기록 갱신
+      const RECORD_KEY = 'dungeon7_record';
+      let record = { maxFloor: 0, maxKills: 0 };
+      try { record = JSON.parse(localStorage.getItem(RECORD_KEY) || '{}'); } catch {}
+      const newMaxFloor = Math.max(record.maxFloor || 0, floor);
+      const newMaxKills = Math.max(record.maxKills || 0, player.kills);
+      try { localStorage.setItem(RECORD_KEY, JSON.stringify({ maxFloor: newMaxFloor, maxKills: newMaxKills })); } catch {}
+
+      const recordLine = `\n🏆 최고 기록: B${newMaxFloor}F · ${newMaxKills}마리`;
+      const baseLine   = `B${floor}F · 처치 ${player.kills}마리 · 경험치 ${player.xp}`;
+
+      if (s === 'dead') {
+        $deadStats.textContent = `전투 불능\n${baseLine}${recordLine}`;
+      } else {
+        const el = document.getElementById('escaped-stats');
+        if (el) el.textContent = `탈출 성공!\n${baseLine}${recordLine}`;
+      }
     }
     if (s === 'playing') {
       resizeCanvas();
