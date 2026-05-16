@@ -2080,6 +2080,8 @@
 
   let selectedEquips = []; // 선택된 무기 목록 (복수)
   let selectedSlots  = {}; // { head: eq|null, chest: eq|null, ... }
+  let _allEquipList  = []; // 전체 장비 목록 캐시
+  let _activeSlot    = null; // 현재 선택된 슬롯 id
 
   function makeEquipCard(eq) {
     const s   = eq.stats || {};
@@ -2111,7 +2113,7 @@
     if (s.hpBonus      > 0) parts.push(`HP <span>+${s.hpBonus}</span>`);
     if ((s.durabilityMax||0) > 0) parts.push(`내구 <span>${s.durabilityMax}</span>`);
     info.innerHTML = `
-      <div class="equip-card-name ${rarityClass}">${escHtml(eq.name||'장비')} <span style="opacity:0.5;font-size:0.85em">${slotDef.emoji}</span></div>
+      <div class="equip-card-name ${rarityClass}">${escHtml(eq.name||'장비')}</div>
       <div class="equip-card-stats">${parts.join(' · ')||'-'}</div>`;
 
     const check = document.createElement('span');
@@ -2122,60 +2124,147 @@
     return card;
   }
 
-  function renderEquipList(list) {
+  /** 슬롯 DOM 요소에 장착된 장비 썸네일 반영 */
+  function refreshSlotUI() {
+    document.querySelectorAll('.equip-slot').forEach(el => {
+      const slotId = el.dataset.slot;
+      const def = SLOT_DEFS.find(d => d.id === slotId);
+      el.classList.remove('slot-equipped');
+
+      // 기존 썸네일/뱃지 제거
+      el.querySelector('.slot-thumb')?.remove();
+      el.querySelector('.slot-count-badge')?.remove();
+
+      if (slotId === 'weapon') {
+        const count = selectedEquips.length;
+        if (count > 0) {
+          el.classList.add('slot-equipped');
+          const first = selectedEquips[0];
+          const pa = first.pixelArt || first.pixel_art;
+          if (pa && pa.imageDataUrl) {
+            const img = document.createElement('img');
+            img.src = pa.imageDataUrl;
+            img.className = 'slot-thumb';
+            el.querySelector('.slot-emoji').replaceWith(img);
+          }
+          if (count > 1) {
+            const badge = document.createElement('span');
+            badge.className = 'slot-count-badge';
+            badge.textContent = `×${count}`;
+            el.appendChild(badge);
+          }
+        }
+      } else {
+        const eq = selectedSlots[slotId];
+        if (eq) {
+          el.classList.add('slot-equipped');
+          const pa = eq.pixelArt || eq.pixel_art;
+          if (pa && pa.imageDataUrl) {
+            const img = document.createElement('img');
+            img.src = pa.imageDataUrl;
+            img.className = 'slot-thumb';
+            el.querySelector('.slot-emoji').replaceWith(img);
+          }
+        }
+      }
+
+      // active 표시
+      if (_activeSlot === slotId) el.classList.add('slot-active');
+      else el.classList.remove('slot-active');
+    });
+  }
+
+  /** 슬롯 클릭 시 해당 슬롯의 장비 목록 표시 */
+  function openSlotPicker(slotId) {
+    const def = SLOT_DEFS.find(d => d.id === slotId);
+    if (!def) return;
+
+    _activeSlot = slotId;
+    refreshSlotUI();
+
+    const items = _allEquipList.filter(e => (e.stats?.equipSlot || 'weapon') === slotId);
+    const $picker = document.getElementById('equip-picker');
+    const $title  = document.getElementById('equip-picker-title');
+    if (!$picker || !$title) return;
+
+    if (items.length === 0) {
+      $picker.classList.add('hidden');
+      return;
+    }
+
+    $title.textContent = def.weapon
+      ? `${def.emoji} ${def.label} — 복수 선택 가능 (던전 중 교체)`
+      : `${def.emoji} ${def.label} — 1개 선택`;
     $equipList.innerHTML = '';
+    $picker.classList.remove('hidden');
+
+    let slotCardPairs = [];
+    for (const eq of items) {
+      const card = makeEquipCard(eq);
+
+      if (def.weapon) {
+        if (selectedEquips.includes(eq)) card.classList.add('equip-selected');
+        const toggle = () => {
+          const idx = selectedEquips.indexOf(eq);
+          if (idx === -1) { selectedEquips.push(eq); card.classList.add('equip-selected'); }
+          else            { selectedEquips.splice(idx,1); card.classList.remove('equip-selected'); }
+          refreshSlotUI();
+          updateEnterBtn();
+        };
+        card.onclick = toggle;
+        card.onkeydown = ev => { if(ev.key==='Enter'||ev.key===' ') toggle(); };
+      } else {
+        slotCardPairs.push({ eq, card });
+        if (selectedSlots[slotId] === eq) card.classList.add('equip-selected');
+        const select = () => {
+          if (selectedSlots[slotId] === eq) {
+            selectedSlots[slotId] = null;
+            card.classList.remove('equip-selected');
+          } else {
+            slotCardPairs.forEach(p => p.card.classList.remove('equip-selected'));
+            selectedSlots[slotId] = eq;
+            card.classList.add('equip-selected');
+          }
+          refreshSlotUI();
+          updateEnterBtn();
+        };
+        card.onclick = select;
+        card.onkeydown = ev => { if(ev.key==='Enter'||ev.key===' ') select(); };
+      }
+      $equipList.appendChild(card);
+    }
+  }
+
+  function renderEquipList(list) {
+    _allEquipList = list;
     selectedEquips = [];
     selectedSlots  = {};
+    _activeSlot    = null;
+
+    const $picker = document.getElementById('equip-picker');
+    if ($picker) $picker.classList.add('hidden');
+    if ($equipList) $equipList.innerHTML = '';
+
+    // 슬롯 아이콘 초기화
+    document.querySelectorAll('.equip-slot').forEach(el => {
+      const slotId = el.dataset.slot;
+      const def = SLOT_DEFS.find(d => d.id === slotId);
+      // 원래 이모지/라벨 복원
+      el.innerHTML = `<span class="slot-emoji">${def?.emoji||'?'}</span><span class="slot-label">${def?.label||''}</span>`;
+      el.classList.remove('slot-active','slot-equipped');
+
+      const hasItems = list.some(e => (e.stats?.equipSlot || 'weapon') === slotId);
+      el.style.opacity = hasItems ? '1' : '0.35';
+      el.style.pointerEvents = hasItems ? '' : 'none';
+
+      el.onclick = () => openSlotPicker(slotId);
+    });
+
+    const hasAny = list.length > 0;
+    if ($equipStatus) {
+      $equipStatus.textContent = hasAny ? '' : '장비가 없습니다. 대장간에서 만들어 오세요!';
+    }
     updateEnterBtn();
-
-    let hasAny = false;
-    for (const def of SLOT_DEFS) {
-      const items = list.filter(e => (e.stats?.equipSlot || 'weapon') === def.id);
-      if (items.length === 0) continue;
-      hasAny = true;
-
-      const hdr = document.createElement('p');
-      hdr.className = 'equip-section-hdr';
-      hdr.textContent = def.weapon
-        ? `${def.emoji} ${def.label} (복수 선택, 던전 중 교체)`
-        : `${def.emoji} ${def.label} (1개 선택)`;
-      $equipList.appendChild(hdr);
-
-      let slotCardPairs = [];
-      for (const eq of items) {
-        const card = makeEquipCard(eq);
-        if (def.weapon) {
-          const toggle = () => {
-            const idx = selectedEquips.indexOf(eq);
-            if (idx === -1) { selectedEquips.push(eq); card.classList.add('equip-selected'); }
-            else            { selectedEquips.splice(idx,1); card.classList.remove('equip-selected'); }
-            updateEnterBtn();
-          };
-          card.onclick = toggle;
-          card.onkeydown = ev => { if(ev.key==='Enter'||ev.key===' ') toggle(); };
-        } else {
-          slotCardPairs.push({ eq, card });
-          const select = () => {
-            if (selectedSlots[def.id] === eq) {
-              selectedSlots[def.id] = null;
-              card.classList.remove('equip-selected');
-            } else {
-              slotCardPairs.forEach(p => p.card.classList.remove('equip-selected'));
-              selectedSlots[def.id] = eq;
-              card.classList.add('equip-selected');
-            }
-            updateEnterBtn();
-          };
-          card.onclick = select;
-          card.onkeydown = ev => { if(ev.key==='Enter'||ev.key===' ') select(); };
-        }
-        $equipList.appendChild(card);
-      }
-    }
-
-    if (!hasAny) {
-      $equipList.innerHTML = '<p style="color:var(--dim);text-align:center;padding:1rem">장비가 없습니다. 대장간에서 만들어 오세요!</p>';
-    }
   }
 
   function updateEnterBtn() {

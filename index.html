@@ -14,11 +14,32 @@
   <div id="screen-equip" class="screen">
     <div class="select-card">
       <h1 class="select-title">⚔️ 던전 탐험</h1>
-      <p class="select-sub">대장간에서 만든 장비를 골라 입장하세요</p>
-      <div id="equip-list" class="equip-list"></div>
+      <p class="select-sub">슬롯을 눌러 장비를 장착하세요</p>
+
+      <!-- 장비 슬롯 패널 -->
+      <div class="equip-slot-panel">
+        <div class="equip-slot-grid">
+          <div class="equip-slot" data-slot="weapon"    title="무기">    <span class="slot-emoji">⚔️</span><span class="slot-label">무기</span></div>
+          <div class="equip-slot" data-slot="head"      title="머리">    <span class="slot-emoji">🪖</span><span class="slot-label">머리</span></div>
+          <div class="equip-slot" data-slot="chest"     title="상의">    <span class="slot-emoji">🧥</span><span class="slot-label">상의</span></div>
+          <div class="equip-slot" data-slot="pants"     title="하의">    <span class="slot-emoji">👖</span><span class="slot-label">하의</span></div>
+          <div class="equip-slot" data-slot="gloves"    title="장갑">    <span class="slot-emoji">🧤</span><span class="slot-label">장갑</span></div>
+          <div class="equip-slot" data-slot="boots"     title="신발">    <span class="slot-emoji">👢</span><span class="slot-label">신발</span></div>
+          <div class="equip-slot" data-slot="accessory" title="악세서리"><span class="slot-emoji">💍</span><span class="slot-label">악세</span></div>
+        </div>
+      </div>
+
+      <!-- 선택된 슬롯의 장비 목록 -->
+      <div id="equip-picker" class="equip-picker hidden">
+        <p id="equip-picker-title" class="equip-picker-title"></p>
+        <div id="equip-list" class="equip-list"></div>
+      </div>
+
       <p id="equip-status" class="equip-status">장비 불러오는 중…</p>
-      <button id="btn-enter" class="btn-primary" disabled>⚔️ 입장</button>
-      <button id="btn-bare" class="btn-naked">🏃 맨손으로 입장</button>
+      <div class="equip-btn-row">
+        <button id="btn-enter" class="btn-primary" disabled>⚔️ 입장</button>
+        <button id="btn-bare" class="btn-naked">🏃 맨손으로 입장</button>
+      </div>
     </div>
   </div>
 
