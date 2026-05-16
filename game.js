@@ -493,7 +493,17 @@
     const effDelay = isRunning ? Math.max(70, Math.round(baseDelay * RUN_DELAY_MUL)) : baseDelay;
     if (now - player.lastMoveAt < effDelay) return;
 
-    // 달리기 스태미나 소모
+    const nx = player.gx + dx, ny = player.gy + dy;
+    if (nx < 0 || nx >= DW || ny < 0 || ny >= DH) return;
+
+    const tile = dungeon.grid[ny][nx];
+    if (tile === T.WALL) return; // 벽이면 스태미나 소모 없이 종료
+
+    // 적이 있으면 근접 공격 (달리기 소모 없이 공격 소모만 적용)
+    const enemy = dungeon.enemies.find(e => !e.dead && e.gx===nx && e.gy===ny);
+    if (enemy) { bumpAttack(enemy); player.lastMoveAt = now; return; }
+
+    // 실제 이동할 때만 달리기 스태미나 소모
     if (isRunning) {
       if (player.stamina < STA_RUN_COST) {
         player.runUntil = 0; // 스태미나 부족 → 달리기 종료
@@ -502,16 +512,6 @@
         hudDirty = true;
       }
     }
-
-    const nx = player.gx + dx, ny = player.gy + dy;
-    if (nx < 0 || nx >= DW || ny < 0 || ny >= DH) return;
-
-    const tile = dungeon.grid[ny][nx];
-    if (tile === T.WALL) return;
-
-    // 적이 있으면 근접 공격
-    const enemy = dungeon.enemies.find(e => !e.dead && e.gx===nx && e.gy===ny);
-    if (enemy) { bumpAttack(enemy); player.lastMoveAt = now; return; }
 
     // 이동
     player.gx = nx; player.gy = ny;
