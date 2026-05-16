@@ -205,7 +205,7 @@
   const STA_RUN_COST  = 3;    // 달리기 한 걸음당 스태미나 소모
 
   // 타일 종류
-  const T = { WALL: 0, FLOOR: 1, STAIRS: 2, CHEST: 3, PORTAL: 4 };
+  const T = { WALL: 0, FLOOR: 1, STAIRS: 2, CHEST: 3, PORTAL: 4, ESCAPE: 5 };
 
   // ── 장비 슬롯 정의 ─────────────────────────────────────────────
   const SLOT_DEFS = [
@@ -396,6 +396,22 @@
       enemies.push(guardian);
     }
 
+    // 탈출 포탈 (중간 방 중 랜덤 1개)
+    if (rooms.length >= 3) {
+      const midRooms = rooms.slice(1, -1).filter(r => grid[r.cy][r.cx] === T.FLOOR);
+      if (midRooms.length > 0) {
+        const er = midRooms[Math.floor(Math.random() * midRooms.length)];
+        // 방 안의 랜덤 빈 타일에 배치
+        let ex = er.cx, ey = er.cy, etries = 0;
+        do {
+          ex = er.x + 1 + Math.floor(Math.random() * Math.max(1, er.w - 2));
+          ey = er.y + 1 + Math.floor(Math.random() * Math.max(1, er.h - 2));
+          etries++;
+        } while (etries < 20 && grid[ey][ex] !== T.FLOOR);
+        if (etries < 20) grid[ey][ex] = T.ESCAPE;
+      }
+    }
+
     // 바닥 아이템 (1~2개)
     const items   = [];
     const iTypes  = Object.keys(IDEF);
@@ -544,6 +560,7 @@
     const ii = dungeon.items.findIndex(it => it.gx===nx && it.gy===ny);
     if (ii !== -1) { pickupItem(dungeon.items[ii]); dungeon.items.splice(ii,1); }
 
+    if (tile === T.ESCAPE) { enterEscape(); return; }
     if (tile === T.STAIRS) {
       const guardian = dungeon.enemies.find(e => e.isGuardian && !e.dead);
       if (guardian) {
@@ -1098,6 +1115,14 @@
     saveGame();
   }
 
+  function enterEscape() {
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+    // 탈출 시 세이브 삭제 (아이템 드롭 없음 — 사망 시에만 지급)
+    clearSave();
+    SFX.levelUp();
+    setGameState('escaped');
+  }
+
   function enterCombatFloor() {
     floor++;
     isRestFloor = false;
@@ -1447,6 +1472,14 @@
             } else if (t===T.CHEST) {
               ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
               ctx.fillText('📦',sx+TS/2,sy+TS/2+1);
+            } else if (t===T.ESCAPE) {
+              const ep = 0.55 + Math.sin(frameCount * 0.09) * 0.45;
+              ctx.fillStyle = `rgba(0,220,120,${ep * 0.35})`;
+              ctx.fillRect(sx, sy, TS, TS);
+              ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+              ctx.globalAlpha = 0.7 + Math.sin(frameCount * 0.09) * 0.3;
+              ctx.fillText('🚪', sx+TS/2, sy+TS/2+1);
+              ctx.globalAlpha = 1;
             }
           }
         }
@@ -1848,9 +1881,11 @@
   // ══════════════════════════════════════════════════════════════
   function setGameState(s) {
     gameState = s;
-    $screenEquip.classList.toggle('hidden', s!=='equip_select');
-    $screenGame.classList.toggle ('hidden', s!=='playing');
-    $screenDead.classList.toggle ('hidden', s!=='dead');
+    $screenEquip.classList.toggle  ('hidden', s!=='equip_select');
+    $screenGame.classList.toggle   ('hidden', s!=='playing');
+    $screenDead.classList.toggle   ('hidden', s!=='dead');
+    const $esc = document.getElementById('screen-escaped');
+    if ($esc) $esc.classList.toggle('hidden', s!=='escaped');
 
     if (s === 'playing') {
       startBGM();
@@ -1863,6 +1898,11 @@
       if (animId) { cancelAnimationFrame(animId); animId=null; }
       $deadStats.textContent =
         `B${floor}F 에서 전투 불능\n처치 ${player.kills}마리  ·  경험치 ${player.xp}`;
+    }
+    if (s === 'escaped') {
+      const el = document.getElementById('escaped-stats');
+      if (el) el.textContent =
+        `B${floor}F 에서 탈출 성공\n처치 ${player.kills}마리  ·  경험치 ${player.xp}\n\n⚠️ 아이템은 사망 시에만 저장됩니다`;
     }
     if (s === 'playing') {
       resizeCanvas();
@@ -2510,6 +2550,19 @@
       setGameState('equip_select');
       loadEquipment();
     });
+
+    const $btnEscapedBack = document.getElementById('btn-escaped-back');
+    if ($btnEscapedBack) {
+      $btnEscapedBack.addEventListener('click', () => {
+        // 플랫폼 URL이 있으면 뒤로, 없으면 장비 선택 화면으로
+        if (document.referrer && document.referrer !== window.location.href) {
+          history.back();
+        } else {
+          setGameState('equip_select');
+          loadEquipment();
+        }
+      });
+    }
   }
 
   // ══════════════════════════════════════════════════════════════

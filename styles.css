@@ -693,7 +693,8 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 }
 .dead-emoji { font-size: 4rem; }
 .dead-title { font-size: 2rem; color: var(--danger); }
-.dead-stats { color: var(--dim); font-size: 0.95rem; line-height: 1.9; }
+.escaped-title { color: #4caf50; }
+.dead-stats { color: var(--dim); font-size: 0.95rem; line-height: 1.9; white-space: pre-line; }
 
 /* ── 희귀도 색상 ─────────────────────────────────────────── */
 .rarity-common    { color: #9e9e9e; }
