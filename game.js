@@ -2360,40 +2360,25 @@
     refreshSlotUI(); refreshInvEquip(); updateEnterBtn();
   }
 
-  /** 인벤토리 그리드 렌더링 + 드래그 이벤트 설정 */
-  function renderEquipList(list) {
-    _allEquipList = list;
-    selectedSlots = {};
+  let _invFilter = 'all'; // 현재 선택된 필터
 
-    if ($equipStatus) {
-      $equipStatus.textContent = list.length ? `${list.length}개` : '없음';
-    }
-
+  function renderInvGrid(list) {
     const $grid = document.getElementById('inv-grid');
-    if (!$grid) { refreshSlotUI(); updateEnterBtn(); return; }
+    if (!$grid) return;
     $grid.innerHTML = '';
 
-    // 슬롯 드롭 이벤트
-    document.querySelectorAll('.doll-slot').forEach(slot => {
-      slot.ondragover  = e => { if (_dragItem) { e.preventDefault(); slot.classList.add('drag-over'); } };
-      slot.ondragleave = ()  => slot.classList.remove('drag-over');
-      slot.ondrop      = e  => {
-        e.preventDefault(); slot.classList.remove('drag-over');
-        if (_dragItem) _tryEquip(slot.dataset.slot, _dragItem);
-      };
-    });
+    const filtered = _invFilter === 'all' ? list : list.filter(eq => detectItemSlot(eq) === _invFilter);
 
-    if (list.length === 0) {
-      $grid.innerHTML = '<p class="inv-empty">보유 장비가 없습니다</p>';
-      refreshSlotUI(); updateEnterBtn(); return;
+    if (filtered.length === 0) {
+      $grid.innerHTML = '<p class="inv-empty">해당 슬롯 장비 없음</p>';
+      return;
     }
 
-    list.forEach(eq => {
+    filtered.forEach(eq => {
       const slotId = eq.stats?.equipSlot || 'weapon';
       const tier   = eq.tier || eq.rarity || 'common';
       const emoji  = eq.itemEmoji || eq.emoji || SLOT_DEFS.find(d => d.id === slotId)?.emoji || '⚔️';
       const pa     = eq.pixelArt || eq.pixel_art;
-
       const detectedSlot = detectItemSlot(eq);
       const slotDef = SLOT_DEFS.find(d => d.id === detectedSlot);
 
@@ -2420,7 +2405,6 @@
       name.className = 'inv-item-name'; name.textContent = eq.name || '장비';
       item.appendChild(name);
 
-      // 슬롯 배지 (어디에 드래그해야 하는지 표시)
       const badge = document.createElement('span');
       badge.className = 'inv-slot-badge';
       badge.textContent = slotDef?.emoji || '';
@@ -2437,8 +2421,8 @@
 
       // 더블클릭으로 장착 (이미 장착 중이면 스왑)
       item.addEventListener('dblclick', () => {
-        const slotId = detectItemSlot(eq);
-        selectedSlots[slotId] = eq; // 기존 장착 아이템은 자동으로 교체됨
+        const sid = detectItemSlot(eq);
+        selectedSlots[sid] = eq;
         refreshSlotUI(); refreshInvEquip(); updateEnterBtn();
       });
 
@@ -2446,7 +2430,6 @@
       item.addEventListener('dragstart', e => {
         _dragItem = eq;
         e.dataTransfer.effectAllowed = 'move';
-        // 브라우저 기본 드래그 고스트 이미지 제거 (빈 이미지로 대체)
         const blank = document.createElement('canvas');
         blank.width = blank.height = 1;
         e.dataTransfer.setDragImage(blank, 0, 0);
@@ -2456,7 +2439,7 @@
 
       // 터치 드래그 시작
       item.addEventListener('touchstart', e => {
-        e.preventDefault(); // 스크롤 방지
+        e.preventDefault();
         _touchDragItem   = eq;
         _touchDragOrigin = item;
         const t = e.touches[0];
@@ -2467,17 +2450,74 @@
         _ghostEl.style.top  = t.clientY + 'px';
         document.body.appendChild(_ghostEl);
         item.classList.add('dragging');
-      }, { passive: false }); // passive:false 여야 preventDefault 가능
+      }, { passive: false });
 
       $grid.appendChild(item);
     });
+
+    // 장착 상태 반영
+    refreshInvEquip();
+  }
+
+  /** 인벤토리 그리드 렌더링 + 드래그 이벤트 설정 */
+  function renderEquipList(list) {
+    _allEquipList = list;
+    _invFilter = 'all';
+    selectedSlots = {};
+
+    if ($equipStatus) {
+      $equipStatus.textContent = list.length ? `${list.length}개` : '없음';
+    }
+
+    const $grid = document.getElementById('inv-grid');
+    if (!$grid) { refreshSlotUI(); updateEnterBtn(); return; }
+
+    // 필터 버튼 생성
+    const $filterWrap = document.getElementById('inv-filter-wrap');
+    if ($filterWrap) {
+      $filterWrap.innerHTML = '';
+      const filters = [
+        { id: 'all', emoji: '📦', label: '전체' },
+        ...SLOT_DEFS.map(d => ({ id: d.id, emoji: d.emoji, label: d.label })),
+      ];
+      filters.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = 'inv-filter-btn' + (f.id === 'all' ? ' active' : '');
+        btn.innerHTML = `${f.emoji}<span>${f.label}</span>`;
+        btn.addEventListener('click', () => {
+          _invFilter = f.id;
+          $filterWrap.querySelectorAll('.inv-filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderInvGrid(_allEquipList);
+        });
+        $filterWrap.appendChild(btn);
+      });
+    }
+
+    // 슬롯 드롭 이벤트
+    document.querySelectorAll('.doll-slot').forEach(slot => {
+      slot.ondragover  = e => { if (_dragItem) { e.preventDefault(); slot.classList.add('drag-over'); } };
+      slot.ondragleave = ()  => slot.classList.remove('drag-over');
+      slot.ondrop      = e  => {
+        e.preventDefault(); slot.classList.remove('drag-over');
+        if (_dragItem) _tryEquip(slot.dataset.slot, _dragItem);
+      };
+    });
+
+    if (list.length === 0) {
+      $grid.innerHTML = '<p class="inv-empty">보유 장비가 없습니다</p>';
+      refreshSlotUI(); updateEnterBtn(); return;
+    }
+
+    renderInvGrid(list);
+    refreshSlotUI(); updateEnterBtn();
 
     // 터치 이동/종료 핸들러 (한 번만 등록)
     if (!document._dungeonTouchDrag) {
       document._dungeonTouchDrag = true;
       document.addEventListener('touchmove', e => {
         if (!_ghostEl) return;
-        e.preventDefault(); // 드래그 중 페이지 스크롤 차단
+        e.preventDefault();
         const t = e.touches[0];
         _ghostEl.style.left = t.clientX + 'px';
         _ghostEl.style.top  = t.clientY + 'px';
@@ -2487,7 +2527,7 @@
                     && t.clientY >= r.top  && t.clientY <= r.bottom;
           slot.classList.toggle('drag-over', over);
         });
-      }, { passive: false }); // passive:false 여야 preventDefault 가능
+      }, { passive: false });
 
       document.addEventListener('touchend', e => {
         if (!_ghostEl || !_touchDragItem) return;
@@ -2505,9 +2545,9 @@
         _touchDragItem = null; _touchDragOrigin = null;
       }, { passive: true });
     }
-
-    refreshSlotUI(); updateEnterBtn();
+    return; // 아래 기존 코드 실행 방지
   }
+
 
   function escHtml(s) {
     return String(s)

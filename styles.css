@@ -203,6 +203,35 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   opacity: 0.7;
 }
 
+/* ── 인벤토리 필터 ───────────────────────────────────────── */
+.inv-filter-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.inv-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--dim);
+  font-size: 0.7rem;
+  padding: 3px 7px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.inv-filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.inv-filter-btn.active {
+  border-color: var(--accent);
+  background: rgba(124,77,255,0.15);
+  color: var(--text);
+}
+
 .inv-item {
   background: var(--surface);
   border: 1px solid var(--border);
