@@ -2435,6 +2435,13 @@
         }
       });
 
+      // 더블클릭으로 장착 (이미 장착 중이면 스왑)
+      item.addEventListener('dblclick', () => {
+        const slotId = detectItemSlot(eq);
+        selectedSlots[slotId] = eq; // 기존 장착 아이템은 자동으로 교체됨
+        refreshSlotUI(); refreshInvEquip(); updateEnterBtn();
+      });
+
       // 마우스 드래그
       item.addEventListener('dragstart', e => {
         _dragItem = eq;
