@@ -1226,6 +1226,7 @@
           if (!res) return;
           const el = document.getElementById('dead-stats');
           if (!el) return;
+          if (res.coinsEarned > 0) el.textContent += `\n🪙 ${res.coinsEarned}코인 획득`;
           el.textContent += `\n⚠️ 착용 장비가 모두 파괴되었습니다`;
         }).catch(() => {});
       }
