@@ -1512,9 +1512,17 @@
       }
       return;
     }
+    const prevArmorDur = wrapper.curDur;
     wrapper.curDur = Math.max(0, wrapper.curDur - 1);
     const slotDef = SLOT_DEFS.find(d => d.id === slotId);
     const label = slotDef ? slotDef.label : slotId;
+    // 30% 이하 진입 시 경고 (한 번만)
+    const armorMaxDur = wrapper.maxDur || wrapper.equip?.stats?.durabilityMax || 1;
+    const armorWarnThresh = Math.ceil(armorMaxDur * 0.3);
+    if (wrapper.curDur > 0 && wrapper.curDur <= armorWarnThresh && prevArmorDur > armorWarnThresh) {
+      toast(`⚠️ ${label}가 곧 부숴질 것 같습니다!`);
+      spawnFx(player.px+TS/2, player.py-18, `${label} 위험!`, '#ff9800', 1200);
+    }
     if (wrapper.curDur === 0) {
       const eq = wrapper.equip || wrapper;
       spawnFx(player.px+TS/2, player.py-10, `${label} 파괴!`, '#ff5722', 1200);
@@ -1552,9 +1560,16 @@
       }
       return;
     }
+    const prevWeapDur = player.durability;
     player.durability = Math.max(0, player.durability - 1);
     const activeEq = player.inventory.find(it => it.type === 'equip' && it.active);
     if (activeEq) activeEq.curDur = player.durability;
+    // 30% 이하 진입 시 경고 (한 번만)
+    const weapWarnThresh = Math.ceil(player.durabilityMax * 0.3);
+    if (player.durability > 0 && player.durability <= weapWarnThresh && prevWeapDur > weapWarnThresh) {
+      toast(`⚠️ 무기가 곧 부숴질 것 같습니다!`);
+      spawnFx(player.px+TS/2, player.py-18, `무기 위험!`, '#ff9800', 1200);
+    }
     if (player.durability === 0) destroyWeapon();
   }
 
