@@ -1875,7 +1875,22 @@
       // ── 캐릭터 머리 위 최소 UI (몬스터 가림 방지: 얇고 반투명) ──
       const BAR_W = 36, BAR_H = 4; // HP 바 — 얇게
 
-      // ① HP 바 (캐릭터 바로 위, 얇은 색상 바만)
+      // ① 이름 태그 (캐릭터 바로 위, 작고 반투명)
+      const NAME_H = 14;
+      const nameTop = sy - BAR_H - 3 - 3 - NAME_H;
+      if (_playerNickname) {
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const tw = ctx.measureText(_playerNickname).width;
+        ctx.globalAlpha = 0.72;
+        ctx.fillStyle = 'rgba(10,10,30,0.65)';
+        ctx.fillRect(hx - tw/2 - 4, nameTop, tw + 8, NAME_H);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#d0e8ff';
+        ctx.fillText(_playerNickname, hx, nameTop + NAME_H / 2);
+      }
+
+      // ② HP 바 (캐릭터 바로 위, 얇은 색상 바만)
       const hpBarTop = sy - BAR_H - 3;
       const hpRatio = player.maxHp > 0 ? Math.max(0, player.hp / player.maxHp) : 0;
       ctx.globalAlpha = 0.75;
@@ -1885,9 +1900,9 @@
       ctx.fillRect(hx - BAR_W/2, hpBarTop, Math.round(BAR_W * hpRatio), BAR_H);
       ctx.globalAlpha = 1;
 
-      // ② 카운터 타이밍 바 (적이 공격 예고할 때만 표시)
+      // ③ 카운터 타이밍 바 (적이 공격 예고할 때만 표시)
       const CB_W = 72, CB_H = 14;
-      const cbTop = sy - BAR_H - 3 - 4 - CB_H; // HP 바 바로 위
+      const cbTop = sy - BAR_H - 3 - 4 - CB_H - 3 - NAME_H - 3; // 이름 태그 위
       const telegraphingH = dungeon.enemies.filter(e => e.state === 'telegraph' && !e.dead);
       if (telegraphingH.length > 0) {
         const mostH = telegraphingH.reduce((a, b) =>
