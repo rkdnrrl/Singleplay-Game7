@@ -243,18 +243,31 @@
           let iframeY = window.innerHeight - iframeH;
           iframe.style.cssText = `position:fixed;left:${iframeX}px;top:${iframeY}px;width:${iframeW}px;height:${iframeH}px;border:none;background:transparent;z-index:9999;`;
           document.body.appendChild(iframe);
+          let mouseX = 0, mouseY = 0, isDragging = false;
+          let dragStartMouseX = 0, dragStartMouseY = 0, dragStartIframeX = 0, dragStartIframeY = 0;
+          let dragEndTimer = null;
+          document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX; mouseY = e.clientY;
+            if (!isDragging) return;
+            iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, dragStartIframeX + (mouseX - dragStartMouseX)));
+            iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, dragStartIframeY + (mouseY - dragStartMouseY)));
+            iframe.style.left = iframeX + 'px';
+            iframe.style.top  = iframeY + 'px';
+          });
+          document.addEventListener('mouseup', () => { isDragging = false; });
           window.addEventListener('message', (e) => {
             if (e.data?.type === 'assistant:drag') {
-              iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, iframeX + e.data.dx));
-              iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, iframeY + e.data.dy));
-              iframe.style.left = iframeX + 'px';
-              iframe.style.top  = iframeY + 'px';
+              if (!isDragging) {
+                isDragging = true;
+                dragStartMouseX = mouseX; dragStartMouseY = mouseY;
+                dragStartIframeX = iframeX; dragStartIframeY = iframeY;
+              }
+              if (dragEndTimer) clearTimeout(dragEndTimer);
+              dragEndTimer = setTimeout(() => { isDragging = false; }, 150);
             }
             if (e.data?.type === 'assistant:resize') {
-              iframeW = e.data.width;
-              iframeH = e.data.height;
-              iframe.style.width  = iframeW + 'px';
-              iframe.style.height = iframeH + 'px';
+              iframeW = e.data.width; iframeH = e.data.height;
+              iframe.style.width = iframeW + 'px'; iframe.style.height = iframeH + 'px';
             }
           });
         }
