@@ -243,7 +243,8 @@
           iframe.style.cssText = `position:fixed;right:0;bottom:0;width:${iframeW}px;height:${iframeH}px;border:none;background:transparent;z-index:9999;`;
           document.body.appendChild(iframe);
           document.addEventListener('mousemove', (e) => {
-            iframe.contentWindow?.postMessage({ type: 'assistant:mousemove', x: e.clientX, y: e.clientY }, '*');
+            const rect = iframe.getBoundingClientRect();
+            iframe.contentWindow?.postMessage({ type: 'assistant:mousemove', x: e.clientX - rect.left, y: e.clientY - rect.top }, '*');
           });
           function switchToLeftTop() {
             if (iframeX >= 0) return;
