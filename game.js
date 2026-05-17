@@ -242,34 +242,22 @@
           let iframeX = -1, iframeY = -1;
           iframe.style.cssText = `position:fixed;right:0;bottom:0;width:${iframeW}px;height:${iframeH}px;border:none;background:transparent;z-index:9999;`;
           document.body.appendChild(iframe);
-          let mouseX = 0, mouseY = 0, isDragging = false;
-          let dragStartMouseX = 0, dragStartMouseY = 0, dragStartIframeX = 0, dragStartIframeY = 0;
-          let dragEndTimer = null;
           document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX; mouseY = e.clientY;
             iframe.contentWindow?.postMessage({ type: 'assistant:mousemove', x: e.clientX, y: e.clientY }, '*');
-            if (!isDragging) return;
-            iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, dragStartIframeX + (mouseX - dragStartMouseX)));
-            iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, dragStartIframeY + (mouseY - dragStartMouseY)));
-            iframe.style.left = iframeX + 'px';
-            iframe.style.top  = iframeY + 'px';
           });
-          document.addEventListener('mouseup', () => { isDragging = false; });
+          function switchToLeftTop() {
+            if (iframeX >= 0) return;
+            const rect = iframe.getBoundingClientRect();
+            iframeX = rect.left; iframeY = rect.top;
+            iframe.style.right = ''; iframe.style.bottom = '';
+            iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
+          }
           window.addEventListener('message', (e) => {
             if (e.data?.type === 'assistant:drag') {
-              if (!isDragging) {
-                isDragging = true;
-                if (iframeX < 0) {
-                  const rect = iframe.getBoundingClientRect();
-                  iframeX = rect.left; iframeY = rect.top;
-                  iframe.style.right = ''; iframe.style.bottom = '';
-                  iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
-                }
-                dragStartMouseX = mouseX; dragStartMouseY = mouseY;
-                dragStartIframeX = iframeX; dragStartIframeY = iframeY;
-              }
-              if (dragEndTimer) clearTimeout(dragEndTimer);
-              dragEndTimer = setTimeout(() => { isDragging = false; }, 150);
+              switchToLeftTop();
+              iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, iframeX + (e.data.dx ?? 0)));
+              iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, iframeY + (e.data.dy ?? 0)));
+              iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
             }
             if (e.data?.type === 'assistant:resize') {
               iframeW = e.data.width; iframeH = e.data.height;
