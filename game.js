@@ -234,12 +234,18 @@
         if (d?.user?.nickname) _playerNickname = d.user.nickname;
         // 캐릭터 iframe 삽입 (commonUserId 우선 — CommonDB 기준 ID)
         const cuid = d?.user?.commonUserId || d?.user?.id;
-        if (cuid && !document.getElementById('_assistantIframe')) {
+        if (cuid && !document.getElementById('assistant-iframe')) {
           const iframe = document.createElement('iframe');
-          iframe.id = '_assistantIframe';
+          iframe.id = 'assistant-iframe';
           iframe.src = `https://assistant-chi-two.vercel.app?userId=${cuid}&app=platform`;
-          iframe.style.cssText = 'position:fixed;bottom:0;right:0;width:220px;height:300px;border:none;background:transparent;z-index:9999;pointer-events:none;';
+          iframe.style.cssText = 'position:fixed;bottom:0;right:0;width:220px;height:300px;border:none;background:transparent;z-index:9999;';
           document.body.appendChild(iframe);
+          window.addEventListener('message', (e) => {
+            if (e.data?.type === 'assistant:resize') {
+              iframe.style.width  = e.data.width  + 'px';
+              iframe.style.height = e.data.height + 'px';
+            }
+          });
         }
       })
       .catch(() => {});
