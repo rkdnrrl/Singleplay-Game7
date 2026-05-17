@@ -223,6 +223,24 @@
   const urlParams  = new URLSearchParams(window.location.search);
   const alpToken   = urlParams.get('token') || '';
   const platformApi = window.__ALP_PLATFORM_API__ || '';
+  const platformWeb = urlParams.get('platformWeb') || '';
+
+  // 웹으로 돌아가기 버튼
+  if (platformWeb) {
+    const btn = document.createElement('a');
+    btn.href = platformWeb + '/games';
+    btn.textContent = '← 게임 목록';
+    btn.style.cssText = [
+      'position:fixed;top:12px;left:12px;z-index:9999',
+      'background:rgba(255,255,255,0.07);color:#aaa',
+      'border:1px solid rgba(255,255,255,0.15);border-radius:20px',
+      'padding:5px 12px;font-size:0.78rem;text-decoration:none',
+      'backdrop-filter:blur(6px);transition:background .15s',
+    ].join(';');
+    btn.onmouseover = () => { btn.style.background = 'rgba(255,255,255,0.18)'; btn.style.color = '#fff'; };
+    btn.onmouseout  = () => { btn.style.background = 'rgba(255,255,255,0.07)'; btn.style.color = '#aaa'; };
+    document.body.appendChild(btn);
+  }
 
   let _sessionExpiredShown = false;
   function showSessionExpiredBanner() {
