@@ -232,11 +232,12 @@
     }).then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.user?.nickname) _playerNickname = d.user.nickname;
-        // 캐릭터 iframe 삽입
-        if (d?.user?.id && !document.getElementById('_assistantIframe')) {
+        // 캐릭터 iframe 삽입 (commonUserId 우선 — CommonDB 기준 ID)
+        const cuid = d?.user?.commonUserId || d?.user?.id;
+        if (cuid && !document.getElementById('_assistantIframe')) {
           const iframe = document.createElement('iframe');
           iframe.id = '_assistantIframe';
-          iframe.src = `https://assistant-chi-two.vercel.app?userId=${d.user.id}&app=platform`;
+          iframe.src = `https://assistant-chi-two.vercel.app?userId=${cuid}&app=platform`;
           iframe.style.cssText = 'position:fixed;bottom:0;right:0;width:220px;height:300px;border:none;background:transparent;z-index:9999;pointer-events:none;';
           document.body.appendChild(iframe);
         }
