@@ -225,12 +225,24 @@
   const platformApi = window.__ALP_PLATFORM_API__ || '';
   const platformWeb = urlParams.get('platformWeb') || '';
 
-  // 닉네임 미리 로드
+  // 닉네임 + 스킬 미리 로드
   if (alpToken && platformApi) {
     apiFetch(`${platformApi}/api/auth/me`, {
       headers: { Authorization: `Bearer ${alpToken}` },
     }).then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.user?.nickname) _playerNickname = d.user.nickname; })
+      .catch(() => {});
+
+    apiFetch(`${platformApi}/api/dungeon/skills`, {
+      headers: { Authorization: `Bearer ${alpToken}` },
+    }).then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        _skillPoints = d.skillPoints ?? 0;
+        _skillData   = d.skillData   ?? {};
+        _skillLoaded = true;
+        renderSkillUI();
+      })
       .catch(() => {});
   }
 
@@ -324,6 +336,90 @@
   let canvas, ctx, animId;
   let gameState = 'equip_select'; // equip_select | playing | dead
   let _playerNickname = ''; // 서버에서 가져온 닉네임
+  let _skillPoints = 0;    // 보유 스킬 포인트
+  let _skillData   = {};   // { warrior:0, shield:0, swift:0, tough:0 }
+  let _skillLoaded = false;
+
+  // 스킬 정의 (서버와 동일)
+  const SKILL_DEFS = {
+    warrior: { name: '전사 훈련', emoji: '⚔️', desc: '공격력 +3/레벨', maxLevel: 5 },
+    shield:  { name: '철벽 방어', emoji: '🛡️', desc: '방어력 +2/레벨', maxLevel: 5 },
+    swift:   { name: '신속',     emoji: '💨', desc: '이동속도 +5%/레벨', maxLevel: 3 },
+    tough:   { name: '강인함',   emoji: '❤️', desc: '최대 HP +25/레벨', maxLevel: 5 },
+  };
+  const SKILL_COST = [10, 20, 35, 50, 70];
+
+  function skillCost(lv) { return SKILL_COST[lv] ?? 9999; }
+
+  // 스킬 UI 렌더링
+  function renderSkillUI() {
+    const panel = document.getElementById('skill-panel');
+    const grid  = document.getElementById('skill-grid');
+    const spEl  = document.getElementById('skill-points-display');
+    if (!panel || !grid || !spEl) return;
+
+    panel.style.display = 'block';
+    spEl.textContent = `${_skillPoints} SP`;
+    grid.innerHTML = '';
+
+    for (const [id, def] of Object.entries(SKILL_DEFS)) {
+      const lv   = _skillData[id] || 0;
+      const cost = skillCost(lv);
+      const maxed = lv >= def.maxLevel;
+      const canAfford = _skillPoints >= cost;
+
+      const card = document.createElement('div');
+      card.className = 'skill-card';
+
+      // 파이프(레벨 표시)
+      const pips = Array.from({ length: def.maxLevel }, (_, i) =>
+        `<div class="skill-pip${i < lv ? ' filled' : ''}"></div>`
+      ).join('');
+
+      card.innerHTML = `
+        <div class="skill-card-hdr">${def.emoji} ${def.name} <span style="color:var(--gold);font-size:.7rem">Lv${lv}</span></div>
+        <div class="skill-pips">${pips}</div>
+        <div class="skill-card-desc">${def.desc}</div>
+        <button class="skill-upgrade-btn" ${maxed || !canAfford || !alpToken ? 'disabled' : ''}>
+          ${maxed ? '최대' : `강화 (${cost}SP)`}
+        </button>
+      `;
+
+      const btn = card.querySelector('.skill-upgrade-btn');
+      if (btn && !maxed && canAfford && alpToken) {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            const res = await apiFetch(`${platformApi}/api/dungeon/skills/upgrade`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+              body: JSON.stringify({ skillId: id }),
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            _skillPoints = data.skillPoints;
+            _skillData   = data.skillData;
+            renderSkillUI();
+          } catch {}
+        });
+      }
+
+      grid.appendChild(card);
+    }
+  }
+
+  // 스킬 보너스를 플레이어 스탯에 적용
+  function applySkillBonuses() {
+    const warrior = _skillData.warrior || 0;
+    const shield  = _skillData.shield  || 0;
+    const swift   = _skillData.swift   || 0;
+    const tough   = _skillData.tough   || 0;
+    player.baseAtk   += warrior * 3;
+    player.baseDef   += shield  * 2;
+    player.moveDelay  = Math.max(100, Math.round(player.moveDelay * (1 - swift * 0.05)));
+    player.maxHp     += tough * 25;
+    player.hp         = Math.min(player.hp, player.maxHp);
+  }
   let _invKey = '';    // 인벤토리 변경 감지용 캐시 키
   let _guardianHinted = false; // 수문장 힌트 표시 여부
   let $tooltip = null; // PC 툴팁 엘리먼트
@@ -1272,6 +1368,10 @@
         const dropParts = Object.entries(res.drops || {}).map(([k, v]) => `${NAMES[k]||k} ×${v}`);
         if (dropParts.length) el.textContent += `\n\n💎 획득 아이템: ${dropParts.join(', ')}`;
         if (res.coinsEarned > 0) el.textContent += `\n🪙 ${res.coinsEarned}코인 획득`;
+        if (res.skillPointsGained > 0) {
+          el.textContent += `\n⭐ 스킬 포인트 +${res.skillPointsGained}`;
+          _skillPoints += res.skillPointsGained;
+        }
       }).catch(() => {});
     }
 
@@ -1772,44 +1872,42 @@
       ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('🧙',hx,sy+TS/2+1);
 
-      // ── 머리 위 표시: 카운터(위) → HP바 → 이름(아래) ──────
-      const BAR_W = 54, BAR_H = 7;   // HP 바 크기
-      const CB_W  = 58, CB_H  = 7;   // 카운터 바 크기
-      const NAME_FONT = 'bold 11px sans-serif';
-      const NAME_H = 13; // 이름 영역 높이
+      // ── 머리 위 표시: 스프라이트 위로 체력→이름→카운터 순 ──
+      const BAR_W = 54, BAR_H = 7;
+      const CB_W  = 58, CB_H  = 7;
+      const GAP   = 5; // 요소 간 간격
 
-      // 이름 위치 (스프라이트 바로 위)
-      const nameY   = sy - 4;
-      // HP 바 위치 (이름 위)
-      const hpBarTop = nameY - NAME_H - 4;
-      // 카운터 바 위치 (HP 바 위)
-      const cbTop   = hpBarTop - CB_H - 8;
+      // 1) 체력 바 — 스프라이트 바로 위
+      const hpBarTop = sy - BAR_H - 6;
 
-      // 이름 그리기
-      if (_playerNickname) {
-        ctx.font = NAME_FONT;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        const tw = ctx.measureText(_playerNickname).width;
-        // 배경
-        ctx.fillStyle = 'rgba(8,8,20,0.78)';
-        ctx.fillRect(hx - tw/2 - 4, nameY - NAME_H, tw + 8, NAME_H);
-        // 텍스트
-        ctx.fillStyle = '#c8d8ff';
-        ctx.fillText(_playerNickname, hx, nameY);
-      }
+      // 2) 이름 — 체력 바 위
+      const NAME_H   = 14;
+      const nameY    = hpBarTop - GAP - NAME_H; // 이름 박스 상단 y
 
-      // HP 바
+      // 3) 카운터 바 — 이름 위
+      const cbTop    = nameY - GAP - CB_H;
+
+      // HP 바 그리기
       const hpRatio = player.maxHp > 0 ? Math.max(0, player.hp / player.maxHp) : 0;
-      // 배경
-      ctx.fillStyle = 'rgba(8,8,20,0.82)';
+      ctx.fillStyle = 'rgba(8,8,20,0.85)';
       ctx.fillRect(hx - BAR_W/2 - 1, hpBarTop - 1, BAR_W + 2, BAR_H + 2);
-      // 바
       ctx.fillStyle = hpRatio > 0.5 ? '#4caf50' : hpRatio > 0.25 ? '#ff9800' : '#f44336';
       ctx.fillRect(hx - BAR_W/2, hpBarTop, Math.round(BAR_W * hpRatio), BAR_H);
-      // HP 숫자
-      ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      // HP 숫자 (바 위에)
+      ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
       ctx.fillStyle = 'rgba(220,230,255,0.9)';
-      ctx.fillText(`${player.hp}/${player.maxHp}`, hx, hpBarTop);
+      ctx.fillText(`${player.hp}/${player.maxHp}`, hx, hpBarTop - 1);
+
+      // 이름 그리기 (체력 바 위)
+      if (_playerNickname) {
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const tw = ctx.measureText(_playerNickname).width;
+        ctx.fillStyle = 'rgba(8,8,20,0.82)';
+        ctx.fillRect(hx - tw/2 - 5, nameY, tw + 10, NAME_H);
+        ctx.fillStyle = '#c8d8ff';
+        ctx.fillText(_playerNickname, hx, nameY + NAME_H/2);
+      }
 
       // 카운터 타이밍 바
       const telegraphingH = dungeon.enemies.filter(e => e.state === 'telegraph' && !e.dead);
@@ -2300,6 +2398,9 @@
     player.inventory     = [];
     player.xp=0; player.kills=0;
     player.stamina = STA_MAX;
+
+    // 스킬 보너스 적용
+    applySkillBonuses();
     player.lastMoveAt=0;
     player.moduleDurabilities = {};
     player.moduleDecayMul     = 1.0;
