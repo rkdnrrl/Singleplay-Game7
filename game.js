@@ -254,6 +254,7 @@
             iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
           }
           window.addEventListener('message', (e) => {
+            if (e.data?.type === 'assistant:navigate') { window.open(e.data.url, '_blank'); }
             if (e.data?.type === 'assistant:drag') {
               switchToLeftTop();
               iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, iframeX + (e.data.dx ?? 0)));
