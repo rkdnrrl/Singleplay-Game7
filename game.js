@@ -238,7 +238,7 @@
           const iframe = document.createElement('iframe');
           iframe.id = 'assistant-iframe';
           iframe.src = `https://assistant-chi-two.vercel.app?userId=${cuid}&app=platform`;
-          let iframeW = 220, iframeH = 300;
+          let iframeW = 220, iframeH = 390;
           let iframeX = window.innerWidth  - iframeW;
           let iframeY = window.innerHeight - iframeH;
           iframe.style.cssText = `position:fixed;left:${iframeX}px;top:${iframeY}px;width:${iframeW}px;height:${iframeH}px;border:none;background:transparent;z-index:9999;`;
