@@ -3007,7 +3007,207 @@
     initTooltip();
     setupInput();
     loadEquipment();
+    initEquipPanel();
     setGameState('equip_select');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // 인게임 장비 패널 (일시정지 + 수리)
+  // ══════════════════════════════════════════════════════════════
+  function initEquipPanel() {
+    const overlay   = document.getElementById('equip-panel-overlay');
+    const closeBtn  = document.getElementById('equip-panel-close');
+    const openBtn   = document.getElementById('btn-equip-panel');
+    if (!overlay) return;
+
+    openBtn?.addEventListener('click', openEquipPanel);
+    openBtn?.addEventListener('touchstart', e => { e.preventDefault(); openEquipPanel(); }, { passive: false });
+    closeBtn?.addEventListener('click', closeEquipPanel);
+    closeBtn?.addEventListener('touchstart', e => { e.preventDefault(); closeEquipPanel(); }, { passive: false });
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeEquipPanel(); });
+  }
+
+  function openEquipPanel() {
+    if (gameState !== 'playing') return;
+    // 게임 루프 일시정지
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+    renderEquipPanel();
+    document.getElementById('equip-panel-overlay')?.classList.remove('hidden');
+  }
+
+  function closeEquipPanel() {
+    document.getElementById('equip-panel-overlay')?.classList.add('hidden');
+    // 게임 루프 재개
+    if (gameState === 'playing' && !animId) {
+      lastFrameAt = 0;
+      animId = requestAnimationFrame(loop);
+    }
+  }
+
+  function renderEquipPanel() {
+    const body   = document.getElementById('equip-panel-body');
+    const footer = document.getElementById('equip-panel-footer');
+    if (!body || !footer) return;
+
+    // 수리 아이템 수량
+    const repCount     = player.inventory.filter(it => it.type === 'repair').length;
+    const repFullCount = player.inventory.filter(it => it.type === 'repair_full').length;
+    const hasAnyKit    = repCount > 0 || repFullCount > 0;
+
+    body.innerHTML = '';
+
+    const SLOT_ICON = { head:'🪖', chest:'🧥', pants:'👖', gloves:'🧤', boots:'👢', accessory:'💍' };
+
+    // 무기 행
+    if (player.equipment) {
+      body.appendChild(_makeEpRow({
+        icon: player.equipment.itemEmoji || '⚔️',
+        name: player.equipment.name || '무기',
+        curDur: player.durability,
+        maxDur: player.durabilityMax,
+        onRepair20: repCount > 0 ? () => _repairWeapon(20) : null,
+        onRepairFull: repFullCount > 0 ? () => _repairWeapon(Infinity) : null,
+      }));
+    }
+
+    // 방어구 행
+    const SLOT_ORDER = ['head','chest','gloves','pants','boots','accessory'];
+    for (const slotId of SLOT_ORDER) {
+      const wrapper = player.equippedSlots?.[slotId];
+      if (!wrapper) continue;
+      const eq = wrapper.equip || wrapper;
+      body.appendChild(_makeEpRow({
+        icon: SLOT_ICON[slotId] || '🛡️',
+        name: eq.name || slotId,
+        curDur: wrapper.curDur,
+        maxDur: wrapper.maxDur,
+        onRepair20:   repCount > 0 ? () => _repairArmor(slotId, 20) : null,
+        onRepairFull: repFullCount > 0 ? () => _repairArmor(slotId, Infinity) : null,
+      }));
+    }
+
+    if (body.children.length === 0) {
+      body.innerHTML = '<p style="color:var(--dim);text-align:center;padding:1rem">장착된 장비가 없습니다</p>';
+    }
+
+    // 푸터: 수리 키트 현황 + 전체 수리
+    footer.innerHTML = '';
+    const kitInfo = document.createElement('span');
+    kitInfo.className = 'ep-kit-info';
+    kitInfo.textContent = hasAnyKit
+      ? `🔧 수리키트 ×${repCount}  🔩 완전수리 ×${repFullCount}`
+      : '수리 아이템 없음';
+    footer.appendChild(kitInfo);
+
+    const repAllBtn = document.createElement('button');
+    repAllBtn.className = 'ep-repair-all-btn';
+    repAllBtn.textContent = '🔧 전체 수리';
+    repAllBtn.disabled = !hasAnyKit;
+    repAllBtn.addEventListener('click', () => {
+      _repairAll();
+      renderEquipPanel();
+    });
+    footer.appendChild(repAllBtn);
+  }
+
+  function _makeEpRow({ icon, name, curDur, maxDur, onRepair20, onRepairFull }) {
+    const pct    = maxDur > 0 ? curDur / maxDur : 0;
+    const broken = curDur <= 0;
+    const color  = broken ? '#555' : pct > 0.5 ? '#4caf50' : pct > 0.3 ? '#ff9800' : '#f44336';
+
+    const row = document.createElement('div');
+    row.className = 'ep-row' + (broken ? ' ep-broken' : '');
+    row.innerHTML = `
+      <span class="ep-icon">${icon}</span>
+      <div class="ep-info">
+        <div class="ep-name">${name}</div>
+        <div class="ep-dur-row">
+          <div class="ep-dur-bar-bg">
+            <div class="ep-dur-bar-fill" style="width:${(pct*100).toFixed(1)}%;background:${color}"></div>
+          </div>
+          <span class="ep-dur-val" style="color:${color}">${curDur}/${maxDur}</span>
+        </div>
+      </div>
+      <div class="ep-repair-wrap"></div>`;
+
+    const wrap = row.querySelector('.ep-repair-wrap');
+    if (onRepair20) {
+      const btn = document.createElement('button');
+      btn.className = 'ep-repair-btn';
+      btn.textContent = '🔧 +20';
+      btn.addEventListener('click', () => { onRepair20(); renderEquipPanel(); });
+      wrap.appendChild(btn);
+    }
+    if (onRepairFull) {
+      const btn = document.createElement('button');
+      btn.className = 'ep-repair-btn';
+      btn.textContent = '🔩 완전';
+      btn.addEventListener('click', () => { onRepairFull(); renderEquipPanel(); });
+      wrap.appendChild(btn);
+    }
+    return row;
+  }
+
+  function _repairWeapon(amount) {
+    const isFullKit = amount === Infinity;
+    const kitType   = isFullKit ? 'repair_full' : 'repair';
+    const idx = player.inventory.findIndex(it => it.type === kitType);
+    if (idx === -1) return;
+    player.inventory.splice(idx, 1);
+
+    const add = isFullKit ? (player.durabilityMax - player.durability) : Math.min(20, player.durabilityMax - player.durability);
+    player.durability = Math.min(player.durabilityMax, player.durability + (isFullKit ? player.durabilityMax : 20));
+    const activeEq = player.inventory.find(it => it.type === 'equip' && it.active);
+    if (activeEq) activeEq.curDur = player.durability;
+    if (player.durBroken && player.durability > 0) {
+      player.durBroken = false;
+      _recomputePlayerStats();
+    }
+    hudDirty = true;
+    toast(`🔧 무기 내구도 +${add} 회복`);
+  }
+
+  function _repairArmor(slotId, amount) {
+    const isFullKit = amount === Infinity;
+    const kitType   = isFullKit ? 'repair_full' : 'repair';
+    const idx = player.inventory.findIndex(it => it.type === kitType);
+    if (idx === -1) return;
+    player.inventory.splice(idx, 1);
+
+    const wrapper = player.equippedSlots?.[slotId];
+    if (!wrapper) return;
+    const wasBroken = wrapper.curDur <= 0;
+    const add = isFullKit ? (wrapper.maxDur - wrapper.curDur) : Math.min(20, wrapper.maxDur - wrapper.curDur);
+    wrapper.curDur = Math.min(wrapper.maxDur, wrapper.curDur + (isFullKit ? wrapper.maxDur : 20));
+    const eq = wrapper.equip || wrapper;
+    if (wasBroken && wrapper.curDur > 0) _recomputePlayerStats();
+    hudDirty = true;
+    toast(`🔧 ${eq.name} 내구도 +${add} 회복`);
+  }
+
+  function _repairAll() {
+    // 보유한 수리 아이템을 소진하며 내구도가 낮은 순으로 수리
+    const slots = ['weapon', ...Object.keys(player.equippedSlots || {})];
+    let repaired = 0;
+    while (player.inventory.some(it => it.type === 'repair' || it.type === 'repair_full')) {
+      // 가장 낮은 내구도 슬롯 선택
+      let lowestPct = 1, lowestSlot = null;
+      if (player.equipment && player.durabilityMax > 0) {
+        const p = player.durability / player.durabilityMax;
+        if (p < lowestPct) { lowestPct = p; lowestSlot = 'weapon'; }
+      }
+      for (const [sid, w] of Object.entries(player.equippedSlots || {})) {
+        if (!w || w.maxDur <= 0) continue;
+        const p = w.curDur / w.maxDur;
+        if (p < lowestPct) { lowestPct = p; lowestSlot = sid; }
+      }
+      if (!lowestSlot || lowestPct >= 1) break;
+      if (lowestSlot === 'weapon') _repairWeapon(20);
+      else _repairArmor(lowestSlot, 20);
+      repaired++;
+    }
+    if (repaired > 0) toast(`🔧 전체 수리 완료 (${repaired}회)`);
+    updateArmorHud();
   }
 
   async function loadGameData() {

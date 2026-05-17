@@ -693,6 +693,118 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 }
 .dpad-ctr:active { background: #2a1500; }
 
+/* ── 장비 패널 버튼 ────────────────────────────────────── */
+.equip-panel-btn {
+  width: 46px; height: 46px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.equip-panel-btn:active { background: rgba(255,255,255,0.18); }
+
+/* ── 장비 패널 오버레이 ─────────────────────────────────── */
+.equip-panel-overlay {
+  position: absolute; inset: 0;
+  background: rgba(4,4,14,0.82);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 80;
+}
+.equip-panel-overlay.hidden { display: none; }
+
+.equip-panel-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: min(400px, 94vw);
+  max-height: 80vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.equip-panel-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 1rem; font-weight: 700; color: var(--fg);
+}
+.equip-panel-close-btn {
+  background: none; border: none;
+  color: var(--dim); font-size: 1rem; cursor: pointer;
+  padding: 0.2rem 0.4rem; border-radius: 6px;
+  transition: color 0.15s;
+}
+.equip-panel-close-btn:hover { color: var(--fg); }
+
+.equip-panel-body {
+  flex: 1; overflow-y: auto;
+  padding: 0.6rem 0.8rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+
+/* 장비 행 */
+.ep-row {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.ep-row.ep-broken { border-color: rgba(244,67,54,0.4); }
+.ep-icon { font-size: 1.3rem; flex-shrink: 0; }
+.ep-info { flex: 1; min-width: 0; }
+.ep-name {
+  font-size: 0.82rem; font-weight: 600; color: var(--fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ep-dur-row {
+  display: flex; align-items: center; gap: 0.4rem; margin-top: 0.25rem;
+}
+.ep-dur-bar-bg {
+  flex: 1; height: 5px; background: #12121e;
+  border-radius: 3px; overflow: hidden;
+}
+.ep-dur-bar-fill { height: 100%; border-radius: 3px; transition: width 0.2s, background 0.2s; }
+.ep-dur-val { font-size: 0.68rem; color: var(--dim); flex-shrink: 0; }
+
+.ep-repair-wrap { display: flex; flex-direction: column; gap: 0.3rem; flex-shrink: 0; }
+.ep-repair-btn {
+  padding: 0.3rem 0.55rem;
+  border-radius: 7px;
+  border: 1px solid rgba(100,181,246,0.5);
+  background: rgba(100,181,246,0.1);
+  color: #90caf9;
+  font-size: 0.72rem; font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.ep-repair-btn:hover { background: rgba(100,181,246,0.22); }
+.ep-repair-btn:disabled { opacity: 0.35; cursor: default; }
+
+.equip-panel-footer {
+  padding: 0.5rem 0.8rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.74rem; color: var(--dim);
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+}
+.ep-kit-info { flex: 1; }
+.ep-repair-all-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(76,175,80,0.5);
+  background: rgba(76,175,80,0.12);
+  color: #81c784;
+  font-size: 0.75rem; font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ep-repair-all-btn:hover { background: rgba(76,175,80,0.25); }
+.ep-repair-all-btn:disabled { opacity: 0.35; cursor: default; }
+
 /* ── 컨트롤 힌트 (키보드) ──────────────────────────────── */
 .key-hint {
   position: absolute;

@@ -151,6 +151,19 @@
           <button class="dpad-btn" data-dx="0" data-dy="1">▼</button>
         </div>
       </div>
+      <button class="equip-panel-btn" id="btn-equip-panel" title="장비 현황">🎒</button>
+    </div>
+
+    <!-- 장비 패널 오버레이 (열면 게임 일시정지) -->
+    <div id="equip-panel-overlay" class="equip-panel-overlay hidden">
+      <div class="equip-panel-card">
+        <div class="equip-panel-hdr">
+          ⚔️ 장비 현황
+          <button class="equip-panel-close-btn" id="equip-panel-close">✕</button>
+        </div>
+        <div id="equip-panel-body" class="equip-panel-body"></div>
+        <div class="equip-panel-footer" id="equip-panel-footer"></div>
+      </div>
     </div>
 
   </div>
