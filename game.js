@@ -249,21 +249,24 @@
             iframe.style.right = ''; iframe.style.bottom = '';
             iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
           }
-          let isDragging = false, grabX = 0, grabY = 0, grabSet = false;
           document.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-              if (!grabSet) { grabX = e.clientX - iframeX; grabY = e.clientY - iframeY; grabSet = true; }
-              iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, e.clientX - grabX));
-              iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, e.clientY - grabY));
-              iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
-            }
             iframe.contentWindow?.postMessage({ type: 'assistant:mousemove', x: e.clientX - iframeX, y: e.clientY - iframeY }, '*');
           });
-          document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; grabSet = false; iframe.style.pointerEvents = 'auto'; } });
+          let pendingDx = 0, pendingDy = 0, rafPending = false;
+          function flushDrag() {
+            rafPending = false;
+            if (pendingDx === 0 && pendingDy === 0) return;
+            iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, iframeX + pendingDx));
+            iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, iframeY + pendingDy));
+            iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
+            pendingDx = 0; pendingDy = 0;
+          }
           window.addEventListener('message', (e) => {
             if (e.data?.type === 'assistant:navigate') { window.open(e.data.url, '_blank'); }
-            if (e.data?.type === 'assistant:drag' && !isDragging) {
-              switchToLeftTop(); isDragging = true; grabSet = false; iframe.style.pointerEvents = 'none';
+            if (e.data?.type === 'assistant:drag') {
+              switchToLeftTop();
+              pendingDx += e.data.dx ?? 0; pendingDy += e.data.dy ?? 0;
+              if (!rafPending) { rafPending = true; requestAnimationFrame(flushDrag); }
             }
             if (e.data?.type === 'assistant:resize') {
               iframeW = e.data.width; iframeH = e.data.height;
