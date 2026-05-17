@@ -1873,15 +1873,15 @@
       ctx.fillText('🧙',hx,sy+TS/2+1);
 
       // ── 머리 위 표시: 스프라이트 위로 체력→이름→카운터 순 ──
-      const BAR_W = 54, BAR_H = 7;
-      const CB_W  = 58, CB_H  = 7;
-      const GAP   = 5; // 요소 간 간격
+      const BAR_W = 90, BAR_H = 13;
+      const CB_W  = 96, CB_H  = 13;
+      const GAP   = 9; // 요소 간 간격
 
       // 1) 체력 바 — 스프라이트 바로 위
-      const hpBarTop = sy - BAR_H - 6;
+      const hpBarTop = sy - BAR_H - 8;
 
       // 2) 이름 — 체력 바 위
-      const NAME_H   = 14;
+      const NAME_H   = 22;
       const nameY    = hpBarTop - GAP - NAME_H; // 이름 박스 상단 y
 
       // 3) 카운터 바 — 이름 위
@@ -1894,17 +1894,17 @@
       ctx.fillStyle = hpRatio > 0.5 ? '#4caf50' : hpRatio > 0.25 ? '#ff9800' : '#f44336';
       ctx.fillRect(hx - BAR_W/2, hpBarTop, Math.round(BAR_W * hpRatio), BAR_H);
       // HP 숫자 (바 위에)
-      ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
       ctx.fillStyle = 'rgba(220,230,255,0.9)';
-      ctx.fillText(`${player.hp}/${player.maxHp}`, hx, hpBarTop - 1);
+      ctx.fillText(`${player.hp}/${player.maxHp}`, hx, hpBarTop - 2);
 
       // 이름 그리기 (체력 바 위)
       if (_playerNickname) {
-        ctx.font = 'bold 11px sans-serif';
+        ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const tw = ctx.measureText(_playerNickname).width;
         ctx.fillStyle = 'rgba(8,8,20,0.82)';
-        ctx.fillRect(hx - tw/2 - 5, nameY, tw + 10, NAME_H);
+        ctx.fillRect(hx - tw/2 - 6, nameY, tw + 12, NAME_H);
         ctx.fillStyle = '#c8d8ff';
         ctx.fillText(_playerNickname, hx, nameY + NAME_H/2);
       }
@@ -1935,7 +1935,7 @@
         ctx.fillRect(Math.max(hx-CB_W/2, cursorX-2), cbTop, Math.min(5, CB_W-(cursorX-(hx-CB_W/2))), CB_H);
 
         // 라벨
-        ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
         const pulse = inPerfH ? (0.7 + Math.sin(now * 0.02) * 0.3) : 1;
         ctx.globalAlpha = pulse;
         ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(200,130,130,0.9)';
