@@ -225,6 +225,15 @@
   const platformApi = window.__ALP_PLATFORM_API__ || '';
   const platformWeb = urlParams.get('platformWeb') || '';
 
+  // 닉네임 미리 로드
+  if (alpToken && platformApi) {
+    apiFetch(`${platformApi}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${alpToken}` },
+    }).then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.user?.nickname) _playerNickname = d.user.nickname; })
+      .catch(() => {});
+  }
+
   // 웹으로 돌아가기 버튼
   if (platformWeb) {
     const btn = document.createElement('a');
@@ -314,6 +323,7 @@
   // ── 게임 상태 변수 ─────────────────────────────────────────────
   let canvas, ctx, animId;
   let gameState = 'equip_select'; // equip_select | playing | dead
+  let _playerNickname = ''; // 서버에서 가져온 닉네임
   let _invKey = '';    // 인벤토리 변경 감지용 캐시 키
   let _guardianHinted = false; // 수문장 힌트 표시 여부
   let $tooltip = null; // PC 툴팁 엘리먼트
@@ -1285,6 +1295,16 @@
     }
     SFX.stairs();
     hudDirty = true;
+
+    // 일일 미션: 던전 5층 도달
+    if (floor === 5 && alpToken && platformApi) {
+      apiFetch(`${platformApi}/api/missions/daily/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${alpToken}` },
+        body: JSON.stringify({ missionId: 'dungeon_5', increment: 1 }),
+        keepalive: true,
+      }).catch(() => {});
+    }
   }
 
   function calcArmorTotals() {
@@ -1752,22 +1772,46 @@
       ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('🧙',hx,sy+TS/2+1);
 
-      // ── 머리 위 HP 바 ───────────────────────────────────
-      const BAR_W = 32, BAR_H = 4;
-      const hpBarTop = sy - 9;
-      const hpRatio  = player.maxHp > 0 ? Math.max(0, player.hp / player.maxHp) : 0;
+      // ── 머리 위 표시: 카운터(위) → HP바 → 이름(아래) ──────
+      const BAR_W = 54, BAR_H = 7;   // HP 바 크기
+      const CB_W  = 58, CB_H  = 7;   // 카운터 바 크기
+      const NAME_FONT = 'bold 11px sans-serif';
+      const NAME_H = 13; // 이름 영역 높이
+
+      // 이름 위치 (스프라이트 바로 위)
+      const nameY   = sy - 4;
+      // HP 바 위치 (이름 위)
+      const hpBarTop = nameY - NAME_H - 4;
+      // 카운터 바 위치 (HP 바 위)
+      const cbTop   = hpBarTop - CB_H - 8;
+
+      // 이름 그리기
+      if (_playerNickname) {
+        ctx.font = NAME_FONT;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        const tw = ctx.measureText(_playerNickname).width;
+        // 배경
+        ctx.fillStyle = 'rgba(8,8,20,0.78)';
+        ctx.fillRect(hx - tw/2 - 4, nameY - NAME_H, tw + 8, NAME_H);
+        // 텍스트
+        ctx.fillStyle = '#c8d8ff';
+        ctx.fillText(_playerNickname, hx, nameY);
+      }
+
+      // HP 바
+      const hpRatio = player.maxHp > 0 ? Math.max(0, player.hp / player.maxHp) : 0;
       // 배경
-      ctx.fillStyle = 'rgba(8,8,20,0.75)';
+      ctx.fillStyle = 'rgba(8,8,20,0.82)';
       ctx.fillRect(hx - BAR_W/2 - 1, hpBarTop - 1, BAR_W + 2, BAR_H + 2);
       // 바
       ctx.fillStyle = hpRatio > 0.5 ? '#4caf50' : hpRatio > 0.25 ? '#ff9800' : '#f44336';
       ctx.fillRect(hx - BAR_W/2, hpBarTop, Math.round(BAR_W * hpRatio), BAR_H);
-      // 텍스트
-      ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillStyle = 'rgba(210,210,255,0.85)';
+      // HP 숫자
+      ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillStyle = 'rgba(220,230,255,0.9)';
       ctx.fillText(`${player.hp}/${player.maxHp}`, hx, hpBarTop);
 
-      // ── 머리 위 카운터 타이밍 바 ─────────────────────────
+      // 카운터 타이밍 바
       const telegraphingH = dungeon.enemies.filter(e => e.state === 'telegraph' && !e.dead);
       if (telegraphingH.length > 0) {
         const mostH = telegraphingH.reduce((a, b) =>
@@ -1777,30 +1821,26 @@
         const inWinH = elH >= CTR_START && elH <= CTR_END;
         const inPerfH= elH >= CTR_START && elH <= PERF_END;
 
-        const CB_W = 36, CB_H = 5;
-        const cbTop = hpBarTop - 12;
-
-        // 존 배경 (회색 → 금색 → 주황 → 회색 구간)
+        // 존 배경
         const z1 = Math.round(CB_W * CTR_START / TELEGRAPH_MS);
         const z2 = Math.round(CB_W * PERF_END   / TELEGRAPH_MS);
         const z3 = Math.round(CB_W * CTR_END     / TELEGRAPH_MS);
-        ctx.fillStyle='rgba(8,8,20,0.82)'; ctx.fillRect(hx-CB_W/2-1, cbTop-1, CB_W+2, CB_H+2);
-        ctx.fillStyle='rgba(160,50,50,0.35)';  ctx.fillRect(hx-CB_W/2,    cbTop, z1,       CB_H);
-        ctx.fillStyle='rgba(245,197,24,0.40)';  ctx.fillRect(hx-CB_W/2+z1, cbTop, z2-z1,   CB_H);
-        ctx.fillStyle='rgba(255,152,0,0.35)';   ctx.fillRect(hx-CB_W/2+z2, cbTop, z3-z2,   CB_H);
-        ctx.fillStyle='rgba(160,50,50,0.35)';   ctx.fillRect(hx-CB_W/2+z3, cbTop, CB_W-z3, CB_H);
+        ctx.fillStyle='rgba(8,8,20,0.85)'; ctx.fillRect(hx-CB_W/2-1, cbTop-1, CB_W+2, CB_H+2);
+        ctx.fillStyle='rgba(160,50,50,0.4)';  ctx.fillRect(hx-CB_W/2,     cbTop, z1,       CB_H);
+        ctx.fillStyle='rgba(245,197,24,0.45)'; ctx.fillRect(hx-CB_W/2+z1, cbTop, z2-z1,   CB_H);
+        ctx.fillStyle='rgba(255,152,0,0.4)';   ctx.fillRect(hx-CB_W/2+z2, cbTop, z3-z2,   CB_H);
+        ctx.fillStyle='rgba(160,50,50,0.4)';   ctx.fillRect(hx-CB_W/2+z3, cbTop, CB_W-z3, CB_H);
 
-        // 현재 경과 커서
+        // 커서
         const cursorX = hx - CB_W/2 + Math.min(CB_W, Math.round(CB_W * elH / TELEGRAPH_MS));
-        const barColor = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(200,80,80,0.7)';
-        ctx.fillStyle = barColor;
-        ctx.fillRect(Math.max(hx - CB_W/2, cursorX - 2), cbTop, Math.min(4, CB_W - (cursorX - (hx-CB_W/2))), CB_H);
+        ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(200,80,80,0.8)';
+        ctx.fillRect(Math.max(hx-CB_W/2, cursorX-2), cbTop, Math.min(5, CB_W-(cursorX-(hx-CB_W/2))), CB_H);
 
         // 라벨
-        ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
         const pulse = inPerfH ? (0.7 + Math.sin(now * 0.02) * 0.3) : 1;
         ctx.globalAlpha = pulse;
-        ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(180,130,130,0.8)';
+        ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(200,130,130,0.9)';
         ctx.fillText(inPerfH ? '⚡완벽!' : inWinH ? '⚡반격!' : '준비', hx, cbTop);
         ctx.globalAlpha = 1;
       }
