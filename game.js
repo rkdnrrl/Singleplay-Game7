@@ -242,10 +242,6 @@
           let iframeX = -1, iframeY = -1;
           iframe.style.cssText = `position:fixed;right:0;bottom:0;width:${iframeW}px;height:${iframeH}px;border:none;background:transparent;z-index:9999;`;
           document.body.appendChild(iframe);
-          document.addEventListener('mousemove', (e) => {
-            const rect = iframe.getBoundingClientRect();
-            iframe.contentWindow?.postMessage({ type: 'assistant:mousemove', x: e.clientX - rect.left, y: e.clientY - rect.top }, '*');
-          });
           function switchToLeftTop() {
             if (iframeX >= 0) return;
             const rect = iframe.getBoundingClientRect();
@@ -253,13 +249,21 @@
             iframe.style.right = ''; iframe.style.bottom = '';
             iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
           }
+          let isDragging = false, grabX = 0, grabY = 0, grabSet = false;
+          document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+              if (!grabSet) { grabX = e.clientX - iframeX; grabY = e.clientY - iframeY; grabSet = true; }
+              iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, e.clientX - grabX));
+              iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, e.clientY - grabY));
+              iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
+            }
+            iframe.contentWindow?.postMessage({ type: 'assistant:mousemove', x: e.clientX - iframeX, y: e.clientY - iframeY }, '*');
+          });
+          document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; grabSet = false; iframe.style.pointerEvents = 'auto'; } });
           window.addEventListener('message', (e) => {
             if (e.data?.type === 'assistant:navigate') { window.open(e.data.url, '_blank'); }
-            if (e.data?.type === 'assistant:drag') {
-              switchToLeftTop();
-              iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, iframeX + (e.data.dx ?? 0)));
-              iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, iframeY + (e.data.dy ?? 0)));
-              iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
+            if (e.data?.type === 'assistant:drag' && !isDragging) {
+              switchToLeftTop(); isDragging = true; grabSet = false; iframe.style.pointerEvents = 'none';
             }
             if (e.data?.type === 'assistant:resize') {
               iframeW = e.data.width; iframeH = e.data.height;
