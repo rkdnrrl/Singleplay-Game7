@@ -239,9 +239,8 @@
           iframe.id = 'assistant-iframe';
           iframe.src = `https://assistant-chi-two.vercel.app?userId=${cuid}&app=platform`;
           let iframeW = 220, iframeH = 390;
-          let iframeX = window.innerWidth  - iframeW;
-          let iframeY = window.innerHeight - iframeH;
-          iframe.style.cssText = `position:fixed;left:${iframeX}px;top:${iframeY}px;width:${iframeW}px;height:${iframeH}px;border:none;background:transparent;z-index:9999;`;
+          let iframeX = -1, iframeY = -1;
+          iframe.style.cssText = `position:fixed;right:0;bottom:0;width:${iframeW}px;height:${iframeH}px;border:none;background:transparent;z-index:9999;`;
           document.body.appendChild(iframe);
           let mouseX = 0, mouseY = 0, isDragging = false;
           let dragStartMouseX = 0, dragStartMouseY = 0, dragStartIframeX = 0, dragStartIframeY = 0;
@@ -260,6 +259,12 @@
             if (e.data?.type === 'assistant:drag') {
               if (!isDragging) {
                 isDragging = true;
+                if (iframeX < 0) {
+                  const rect = iframe.getBoundingClientRect();
+                  iframeX = rect.left; iframeY = rect.top;
+                  iframe.style.right = ''; iframe.style.bottom = '';
+                  iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
+                }
                 dragStartMouseX = mouseX; dragStartMouseY = mouseY;
                 dragStartIframeX = iframeX; dragStartIframeY = iframeY;
               }
