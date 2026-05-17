@@ -1872,44 +1872,40 @@
       ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('🧙',hx,sy+TS/2+1);
 
-      // ── 머리 위 표시: 스프라이트 위로 체력→이름→카운터 순 ──
-      const BAR_W = 90, BAR_H = 13;
-      const CB_W  = 96, CB_H  = 13;
-      const GAP   = 9; // 요소 간 간격
+      // ── 머리 위 표시: 스프라이트 위로 체력→이름→카운터 순 (겹침 없음) ──
+      const BAR_W = 92, BAR_H = 18; // HP 바
+      const CB_W  = 92, CB_H  = 18; // 카운터 바
+      const NAME_H = 22;            // 이름 박스 높이
+      const GAP    = 5;             // 요소 간 여백
 
-      // 1) 체력 바 — 스프라이트 바로 위
-      const hpBarTop = sy - BAR_H - 8;
+      // 위치 계산 (아래→위)
+      const hpBarTop = sy - BAR_H - 6;
+      const nameTop  = hpBarTop - GAP - NAME_H;
+      const cbTop    = nameTop  - GAP - CB_H;
 
-      // 2) 이름 — 체력 바 위
-      const NAME_H   = 22;
-      const nameY    = hpBarTop - GAP - NAME_H; // 이름 박스 상단 y
-
-      // 3) 카운터 바 — 이름 위
-      const cbTop    = nameY - GAP - CB_H;
-
-      // HP 바 그리기
+      // ① HP 바 — 텍스트는 바 안에 중앙 배치
       const hpRatio = player.maxHp > 0 ? Math.max(0, player.hp / player.maxHp) : 0;
-      ctx.fillStyle = 'rgba(8,8,20,0.85)';
+      ctx.fillStyle = 'rgba(8,8,20,0.88)';
       ctx.fillRect(hx - BAR_W/2 - 1, hpBarTop - 1, BAR_W + 2, BAR_H + 2);
       ctx.fillStyle = hpRatio > 0.5 ? '#4caf50' : hpRatio > 0.25 ? '#ff9800' : '#f44336';
       ctx.fillRect(hx - BAR_W/2, hpBarTop, Math.round(BAR_W * hpRatio), BAR_H);
-      // HP 숫자 (바 위에)
-      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillStyle = 'rgba(220,230,255,0.9)';
-      ctx.fillText(`${player.hp}/${player.maxHp}`, hx, hpBarTop - 2);
+      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.fillText(`${player.hp} / ${player.maxHp}`, hx, hpBarTop + BAR_H / 2);
 
-      // 이름 그리기 (체력 바 위)
+      // ② 이름 박스 — 텍스트는 박스 안에 중앙 배치
       if (_playerNickname) {
-        ctx.font = 'bold 15px sans-serif';
+        ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const tw = ctx.measureText(_playerNickname).width;
-        ctx.fillStyle = 'rgba(8,8,20,0.82)';
-        ctx.fillRect(hx - tw/2 - 6, nameY, tw + 12, NAME_H);
+        const boxW = Math.max(tw + 16, BAR_W);
+        ctx.fillStyle = 'rgba(8,8,20,0.88)';
+        ctx.fillRect(hx - boxW/2, nameTop, boxW, NAME_H);
         ctx.fillStyle = '#c8d8ff';
-        ctx.fillText(_playerNickname, hx, nameY + NAME_H/2);
+        ctx.fillText(_playerNickname, hx, nameTop + NAME_H / 2);
       }
 
-      // 카운터 타이밍 바
+      // ③ 카운터 타이밍 바
       const telegraphingH = dungeon.enemies.filter(e => e.state === 'telegraph' && !e.dead);
       if (telegraphingH.length > 0) {
         const mostH = telegraphingH.reduce((a, b) =>
@@ -1919,27 +1915,27 @@
         const inWinH = elH >= CTR_START && elH <= CTR_END;
         const inPerfH= elH >= CTR_START && elH <= PERF_END;
 
-        // 존 배경
+        // 구간 배경
         const z1 = Math.round(CB_W * CTR_START / TELEGRAPH_MS);
         const z2 = Math.round(CB_W * PERF_END   / TELEGRAPH_MS);
         const z3 = Math.round(CB_W * CTR_END     / TELEGRAPH_MS);
-        ctx.fillStyle='rgba(8,8,20,0.85)'; ctx.fillRect(hx-CB_W/2-1, cbTop-1, CB_W+2, CB_H+2);
-        ctx.fillStyle='rgba(160,50,50,0.4)';  ctx.fillRect(hx-CB_W/2,     cbTop, z1,       CB_H);
-        ctx.fillStyle='rgba(245,197,24,0.45)'; ctx.fillRect(hx-CB_W/2+z1, cbTop, z2-z1,   CB_H);
-        ctx.fillStyle='rgba(255,152,0,0.4)';   ctx.fillRect(hx-CB_W/2+z2, cbTop, z3-z2,   CB_H);
-        ctx.fillStyle='rgba(160,50,50,0.4)';   ctx.fillRect(hx-CB_W/2+z3, cbTop, CB_W-z3, CB_H);
+        ctx.fillStyle='rgba(8,8,20,0.88)';      ctx.fillRect(hx-CB_W/2-1, cbTop-1, CB_W+2, CB_H+2);
+        ctx.fillStyle='rgba(160,50,50,0.5)';    ctx.fillRect(hx-CB_W/2,     cbTop, z1,     CB_H);
+        ctx.fillStyle='rgba(245,197,24,0.55)';  ctx.fillRect(hx-CB_W/2+z1, cbTop, z2-z1,  CB_H);
+        ctx.fillStyle='rgba(255,152,0,0.5)';    ctx.fillRect(hx-CB_W/2+z2, cbTop, z3-z2,  CB_H);
+        ctx.fillStyle='rgba(160,50,50,0.5)';    ctx.fillRect(hx-CB_W/2+z3, cbTop, CB_W-z3,CB_H);
 
-        // 커서
-        const cursorX = hx - CB_W/2 + Math.min(CB_W, Math.round(CB_W * elH / TELEGRAPH_MS));
-        ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(200,80,80,0.8)';
-        ctx.fillRect(Math.max(hx-CB_W/2, cursorX-2), cbTop, Math.min(5, CB_W-(cursorX-(hx-CB_W/2))), CB_H);
+        // 커서 (세로선)
+        const cursorX = hx - CB_W/2 + Math.min(CB_W - 4, Math.round(CB_W * elH / TELEGRAPH_MS));
+        ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(220,80,80,0.9)';
+        ctx.fillRect(cursorX, cbTop, 4, CB_H);
 
-        // 라벨
-        ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        // 라벨 — 바 안에 중앙 배치
+        ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const pulse = inPerfH ? (0.7 + Math.sin(now * 0.02) * 0.3) : 1;
         ctx.globalAlpha = pulse;
-        ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(200,130,130,0.9)';
-        ctx.fillText(inPerfH ? '⚡완벽!' : inWinH ? '⚡반격!' : '준비', hx, cbTop);
+        ctx.fillStyle = inPerfH ? '#f5c518' : inWinH ? '#ff9800' : 'rgba(220,170,170,1)';
+        ctx.fillText(inPerfH ? '⚡완벽!' : inWinH ? '⚡반격!' : '준비', hx, cbTop + CB_H / 2);
         ctx.globalAlpha = 1;
       }
     }
