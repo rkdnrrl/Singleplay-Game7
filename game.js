@@ -1,6 +1,277 @@
 (function () {
   'use strict';
 
+  /* ── i18n ── */
+  const _LANG = (function() {
+    try { const p = new URLSearchParams(location.search).get('lang'); return (p || 'ko').toLowerCase().split('-')[0]; } catch { return 'ko'; }
+  })();
+  const _I18N = {
+    ko: {
+      cancel: '취소', confirm: '확인', close: '닫기', back_to_games: '← 게임 목록',
+      tutorial_help: '튜토리얼 다시 보기', t_prev: '이전', t_next: '다음', t_skip: '건너뛰기', t_start: '시작!', t_dont_show: '다시 보지 않기',
+      // 페이지
+      page_title: '⚔️ 던전 탐험',
+      // 장비 선택 화면
+      select_title: '⚔️ 던전 탐험',
+      owned_equipment: '보유 장비',
+      drag_hint: '드래그·더블클릭 → 장착',
+      slot_weapon: '무기', slot_head: '머리', slot_accessory: '악세',
+      slot_chest: '상의', slot_gloves: '장갑', slot_pants: '하의', slot_boots: '신발',
+      passive_skills: '⭐ 패시브 스킬', sp_format: '{n} SP',
+      btn_enter: '⚔️ 입장',
+      // HUD
+      hud_hp: 'HP', hud_durability: '내구', hud_stamina: '스태미나',
+      bare_hands: '맨손', no_armor: '방어구 없음', floor_format: 'B{n}F',
+      // 반응
+      rp_dodge: '🏃 D패드 회피', rp_counter: '⚡ 반격 버튼',
+      // 장비 패널
+      equipment_status: '⚔️ 장비 현황', equipment_status_title: '장비 현황',
+      // 사망/탈출
+      dead_title: '전투 불능', restart_btn: '다시 시작',
+      escaped_title: '탈출 성공!', escaped_back: '🏠 돌아가기',
+      // 토스트/메시지
+      toast_dur_warning: '⚠️ 장비 내구도 30% 이하! 곧 부서질 수 있어요!',
+      toast_equip_broken: '💥 {name} 파괴됨!',
+      toast_armor_broken: '💥 {name}({slot}) 파괴됨!',
+      toast_level_up: '🌟 레벨 업!',
+      toast_floor_clear: '🏁 {n}F 클리어!',
+      toast_skill_point: '⭐ 스킬 포인트 +1',
+      toast_repair_done: '🔧 {name} 수리 완료',
+      toast_repair_fail: '💔 수리 실패: {msg}',
+      toast_pause: '⏸ 일시정지',
+      toast_resume: '▶ 재개',
+      // 스킬
+      skill_warrior: '전사 훈련', skill_warrior_desc: '공격력 +3/레벨',
+      skill_shield: '철벽 방어', skill_shield_desc: '방어력 +2/레벨',
+      skill_speed: '신속', skill_speed_desc: '이동속도 +5%/레벨',
+      skill_tough: '강인함', skill_tough_desc: '최대 HP +25/레벨',
+      skill_lv: 'Lv{n}', skill_max: 'MAX',
+      skill_upgrade: '강화 ({cost}SP)',
+      // 장비 패널
+      panel_attack: '공격력', panel_defense: '방어력', panel_speed: '속도', panel_hp: 'HP 보너스',
+      panel_durability: '내구도', panel_repair: '🔧 수리 ({cost}코인)', panel_repair_full: '내구 최대',
+      panel_unequip: '해제', panel_empty: '장착된 장비 없음',
+      // 인벤 필터
+      filter_all: '전체', filter_weapon: '무기', filter_head: '머리', filter_chest: '상의', filter_pants: '하의', filter_gloves: '장갑', filter_boots: '신발', filter_accessory: '악세서리',
+      // 일반
+      kills_format: '처치: {n}',
+      coins_earned: '획득 코인: {n}',
+      // 튜토리얼
+      t7_t1_title: '던전 탐험에 오신 걸 환영해요!', t7_t1_body: '몬스터를 처치하고 층을 내려가며 보상을 모으세요.<br>죽지 않고 탈출하는 게 핵심이에요!',
+      t7_t2_title: '조작법', t7_t2_body: '<b>마우스 클릭</b>: 이동/공격<br><b>스킬 버튼</b>: 액티브 스킬 사용<br>몬스터에 가까이 가면 자동으로 공격해요.',
+      t7_t3_title: '장비 장착', t7_t3_body: '입장 전 <b>장비 슬롯</b>(무기/머리/상의/하의/손/발/악세서리)에<br>대장간에서 만든 장비를 끼우세요.<br>장비 없이도 진입은 가능하지만 약해요.',
+      t7_t4_title: '내구도 주의', t7_t4_body: '몬스터에 맞으면 장비 <b>내구도가 닳아요</b>.<br>30% 이하면 경고 표시, 0이 되면 파괴됩니다!<br>대장간에서 미리 수리하세요.',
+      t7_t5_title: '사망 vs 탈출', t7_t5_body: '<b>탈출 성공</b>: 층수 × 8 + 킬 × 1 코인 + 아이템 드롭<br><b>사망</b>: 장착 장비 <b>전부 파괴</b> + 층수만큼 코인.<br>위험할 땐 빨리 탈출하세요!',
+      t7_t6_title: '스킬 포인트', t7_t6_body: '5층마다 <b>스킬 포인트(SP)</b>를 얻어요.<br>전사 훈련/철벽 방어/신속/강인함 등 <b>패시브</b>를 강화하세요.<br>죽어도 SP는 유지돼요.',
+      t7_t7_title: '도전!', t7_t7_body: '깊이 들어갈수록 몬스터가 강해지고 보상도 커져요.<br>장비 → 던전 → 코인 → 더 좋은 장비의 사이클!',
+    },
+    en: {
+      cancel: 'Cancel', confirm: 'OK', close: 'Close', back_to_games: '← Games',
+      tutorial_help: 'Replay tutorial', t_prev: 'Back', t_next: 'Next', t_skip: 'Skip', t_start: 'Start!', t_dont_show: "Don't show again",
+      page_title: '⚔️ Dungeon Exploration',
+      select_title: '⚔️ Dungeon Exploration',
+      owned_equipment: 'Owned Gear',
+      drag_hint: 'Drag · double-click → equip',
+      slot_weapon: 'Weapon', slot_head: 'Head', slot_accessory: 'Accessory',
+      slot_chest: 'Chest', slot_gloves: 'Gloves', slot_pants: 'Pants', slot_boots: 'Boots',
+      passive_skills: '⭐ Passive Skills', sp_format: '{n} SP',
+      btn_enter: '⚔️ Enter',
+      hud_hp: 'HP', hud_durability: 'DUR', hud_stamina: 'STA',
+      bare_hands: 'Bare hands', no_armor: 'No armor', floor_format: 'B{n}F',
+      rp_dodge: '🏃 D-pad dodge', rp_counter: '⚡ Counter',
+      equipment_status: '⚔️ Equipment Status', equipment_status_title: 'Equipment',
+      dead_title: 'Defeated', restart_btn: 'Restart',
+      escaped_title: 'Escaped!', escaped_back: '🏠 Return',
+      toast_dur_warning: '⚠️ Durability under 30%! Repair soon!',
+      toast_equip_broken: '💥 {name} broke!',
+      toast_armor_broken: '💥 {name}({slot}) broke!',
+      toast_level_up: '🌟 Level Up!',
+      toast_floor_clear: '🏁 Floor {n} cleared!',
+      toast_skill_point: '⭐ Skill Point +1',
+      toast_repair_done: '🔧 {name} repaired',
+      toast_repair_fail: '💔 Repair failed: {msg}',
+      toast_pause: '⏸ Paused',
+      toast_resume: '▶ Resumed',
+      skill_warrior: 'Warrior Training', skill_warrior_desc: 'ATK +3/lv',
+      skill_shield: 'Iron Wall', skill_shield_desc: 'DEF +2/lv',
+      skill_speed: 'Swiftness', skill_speed_desc: 'Speed +5%/lv',
+      skill_tough: 'Toughness', skill_tough_desc: 'Max HP +25/lv',
+      skill_lv: 'Lv{n}', skill_max: 'MAX',
+      skill_upgrade: 'Upgrade ({cost}SP)',
+      panel_attack: 'Attack', panel_defense: 'Defense', panel_speed: 'Speed', panel_hp: 'HP Bonus',
+      panel_durability: 'Durability', panel_repair: '🔧 Repair ({cost}c)', panel_repair_full: 'Full',
+      panel_unequip: 'Unequip', panel_empty: 'No equipment',
+      filter_all: 'All', filter_weapon: 'Weapon', filter_head: 'Head', filter_chest: 'Chest', filter_pants: 'Pants', filter_gloves: 'Gloves', filter_boots: 'Boots', filter_accessory: 'Accessory',
+      kills_format: 'Kills: {n}',
+      coins_earned: 'Coins earned: {n}',
+      t7_t1_title: 'Welcome to Dungeon Exploration!', t7_t1_body: 'Slay monsters, descend floors, collect rewards.<br>Survive and escape!',
+      t7_t2_title: 'Controls', t7_t2_body: '<b>Mouse click</b>: Move/attack<br><b>Skill buttons</b>: Use active skills<br>You auto-attack monsters when in range.',
+      t7_t3_title: 'Equip Gear', t7_t3_body: 'Before entering, equip <b>gear</b>(weapon/head/chest/pants/hands/feet/accessory)<br>crafted at the Blacksmith.<br>You can enter naked, but you\'ll be fragile.',
+      t7_t4_title: 'Watch Durability', t7_t4_body: 'Getting hit <b>wears down gear</b>.<br>Under 30% shows warning, at 0 it breaks!<br>Repair at the Blacksmith first.',
+      t7_t5_title: 'Death vs Escape', t7_t5_body: '<b>Escape</b>: floors × 8 + kills × 1 coins + item drops<br><b>Death</b>: <b>all equipped gear destroyed</b> + floors as coins.<br>Bail out when dangerous!',
+      t7_t6_title: 'Skill Points', t7_t6_body: 'Every 5 floors grants <b>Skill Points (SP)</b>.<br>Upgrade <b>passives</b>: Warrior/Iron Wall/Swift/Tough.<br>SP persists through death.',
+      t7_t7_title: 'Challenge!', t7_t7_body: 'Deeper = stronger monsters + bigger rewards.<br>Gear → Dungeon → Coins → Better gear cycle!',
+    },
+    ja: {
+      cancel: 'キャンセル', confirm: 'OK', close: '閉じる', back_to_games: '← ゲーム一覧',
+      tutorial_help: 'チュートリアルを再表示', t_prev: '戻る', t_next: '次へ', t_skip: 'スキップ', t_start: 'はじめる!', t_dont_show: '次回から表示しない',
+      page_title: '⚔️ ダンジョン探索',
+      select_title: '⚔️ ダンジョン探索',
+      owned_equipment: '所持装備',
+      drag_hint: 'ドラッグ・ダブルクリック → 装着',
+      slot_weapon: '武器', slot_head: '頭', slot_accessory: 'アクセ',
+      slot_chest: '胴', slot_gloves: '手袋', slot_pants: 'ズボン', slot_boots: '靴',
+      passive_skills: '⭐ パッシブスキル', sp_format: '{n} SP',
+      btn_enter: '⚔️ 入場',
+      hud_hp: 'HP', hud_durability: '耐久', hud_stamina: 'スタミナ',
+      bare_hands: '素手', no_armor: '防具なし', floor_format: 'B{n}F',
+      rp_dodge: '🏃 D-pad回避', rp_counter: '⚡ カウンター',
+      equipment_status: '⚔️ 装備状況', equipment_status_title: '装備',
+      dead_title: '戦闘不能', restart_btn: 'リスタート',
+      escaped_title: '脱出成功!', escaped_back: '🏠 戻る',
+      toast_dur_warning: '⚠️ 装備耐久30%以下! まもなく壊れます!',
+      toast_equip_broken: '💥 {name} 破壊!',
+      toast_armor_broken: '💥 {name}({slot}) 破壊!',
+      toast_level_up: '🌟 レベルアップ!',
+      toast_floor_clear: '🏁 {n}F クリア!',
+      toast_skill_point: '⭐ スキルポイント +1',
+      toast_repair_done: '🔧 {name} 修理完了',
+      toast_repair_fail: '💔 修理失敗: {msg}',
+      toast_pause: '⏸ 一時停止',
+      toast_resume: '▶ 再開',
+      skill_warrior: '戦士訓練', skill_warrior_desc: '攻撃力 +3/Lv',
+      skill_shield: '鉄壁防御', skill_shield_desc: '防御力 +2/Lv',
+      skill_speed: '俊敏', skill_speed_desc: '移動速度 +5%/Lv',
+      skill_tough: '強靭', skill_tough_desc: '最大HP +25/Lv',
+      skill_lv: 'Lv{n}', skill_max: 'MAX',
+      skill_upgrade: '強化 ({cost}SP)',
+      panel_attack: '攻撃力', panel_defense: '防御力', panel_speed: '速度', panel_hp: 'HPボーナス',
+      panel_durability: '耐久度', panel_repair: '🔧 修理 ({cost}コイン)', panel_repair_full: '満タン',
+      panel_unequip: '解除', panel_empty: '装備なし',
+      filter_all: 'すべて', filter_weapon: '武器', filter_head: '頭', filter_chest: '胴', filter_pants: 'ズボン', filter_gloves: '手袋', filter_boots: '靴', filter_accessory: 'アクセ',
+      kills_format: '討伐: {n}',
+      coins_earned: '獲得コイン: {n}',
+      t7_t1_title: 'ダンジョン探索へようこそ!', t7_t1_body: 'モンスターを倒し、階層を下りて報酬を集めましょう。<br>死なずに脱出するのがカギ!',
+      t7_t2_title: '操作方法', t7_t2_body: '<b>マウスクリック</b>: 移動/攻撃<br><b>スキルボタン</b>: アクティブスキル<br>モンスターに近づくと自動で攻撃します。',
+      t7_t3_title: '装備の装着', t7_t3_body: '入場前に<b>装備スロット</b>(武器/頭/胴/ズボン/手/足/アクセサリ)に<br>鍛冶屋で作った装備を装着しましょう。<br>素手でも入れますが弱いです。',
+      t7_t4_title: '耐久度に注意', t7_t4_body: 'モンスターに当たると装備の<b>耐久が減ります</b>。<br>30%以下で警告、0で破壊!<br>鍛冶屋で事前に修理しましょう。',
+      t7_t5_title: '死亡 vs 脱出', t7_t5_body: '<b>脱出成功</b>: 階数 × 8 + キル × 1 コイン + アイテムドロップ<br><b>死亡</b>: 装備<b>全て破壊</b> + 階数分コイン。<br>危ない時は早めに脱出!',
+      t7_t6_title: 'スキルポイント', t7_t6_body: '5階ごとに<b>スキルポイント(SP)</b>獲得。<br>戦士訓練/鉄壁防御/俊敏/強靭などの<b>パッシブ</b>を強化。<br>死亡してもSPは保持されます。',
+      t7_t7_title: '挑戦!', t7_t7_body: '深く潜るほど敵は強く、報酬も大きくなります。<br>装備 → ダンジョン → コイン → 良い装備のサイクル!',
+    },
+    zh: {
+      cancel: '取消', confirm: '确认', close: '关闭', back_to_games: '← 游戏列表',
+      tutorial_help: '重新查看教程', t_prev: '上一步', t_next: '下一步', t_skip: '跳过', t_start: '开始!', t_dont_show: '不再显示',
+      page_title: '⚔️ 地下城探险',
+      select_title: '⚔️ 地下城探险',
+      owned_equipment: '持有装备',
+      drag_hint: '拖动·双击 → 装备',
+      slot_weapon: '武器', slot_head: '头部', slot_accessory: '饰品',
+      slot_chest: '胸甲', slot_gloves: '手套', slot_pants: '裤子', slot_boots: '鞋子',
+      passive_skills: '⭐ 被动技能', sp_format: '{n} SP',
+      btn_enter: '⚔️ 进入',
+      hud_hp: 'HP', hud_durability: '耐久', hud_stamina: '体力',
+      bare_hands: '徒手', no_armor: '无防具', floor_format: 'B{n}F',
+      rp_dodge: '🏃 D-pad闪避', rp_counter: '⚡ 反击',
+      equipment_status: '⚔️ 装备状态', equipment_status_title: '装备',
+      dead_title: '战斗不能', restart_btn: '重新开始',
+      escaped_title: '逃脱成功!', escaped_back: '🏠 返回',
+      toast_dur_warning: '⚠️ 装备耐久低于30%! 即将损坏!',
+      toast_equip_broken: '💥 {name} 已损坏!',
+      toast_armor_broken: '💥 {name}({slot}) 已损坏!',
+      toast_level_up: '🌟 升级!',
+      toast_floor_clear: '🏁 {n}F 通关!',
+      toast_skill_point: '⭐ 技能点 +1',
+      toast_repair_done: '🔧 {name} 修理完成',
+      toast_repair_fail: '💔 修理失败: {msg}',
+      toast_pause: '⏸ 暂停',
+      toast_resume: '▶ 继续',
+      skill_warrior: '战士训练', skill_warrior_desc: '攻击力 +3/级',
+      skill_shield: '铁壁防御', skill_shield_desc: '防御力 +2/级',
+      skill_speed: '迅捷', skill_speed_desc: '移动速度 +5%/级',
+      skill_tough: '坚韧', skill_tough_desc: '最大HP +25/级',
+      skill_lv: 'Lv{n}', skill_max: '满级',
+      skill_upgrade: '强化 ({cost}SP)',
+      panel_attack: '攻击力', panel_defense: '防御力', panel_speed: '速度', panel_hp: 'HP加成',
+      panel_durability: '耐久度', panel_repair: '🔧 修理 ({cost}金币)', panel_repair_full: '满',
+      panel_unequip: '卸下', panel_empty: '无装备',
+      filter_all: '全部', filter_weapon: '武器', filter_head: '头部', filter_chest: '胸甲', filter_pants: '裤子', filter_gloves: '手套', filter_boots: '鞋子', filter_accessory: '饰品',
+      kills_format: '击杀: {n}',
+      coins_earned: '获得金币: {n}',
+      t7_t1_title: '欢迎来到地下城探险!', t7_t1_body: '击败怪物,下到更深层,收集奖励。<br>不死并逃脱是关键!',
+      t7_t2_title: '操作方法', t7_t2_body: '<b>鼠标点击</b>: 移动/攻击<br><b>技能按钮</b>: 使用主动技能<br>靠近怪物时会自动攻击。',
+      t7_t3_title: '装备装着', t7_t3_body: '进入前装备<b>装备槽</b>(武器/头/胸/裤/手/脚/饰品)<br>在铁匠铺制作的装备。<br>赤手也能进但很脆弱。',
+      t7_t4_title: '注意耐久', t7_t4_body: '被怪物打中会<b>消耗耐久</b>。<br>低于30%显示警告,0时损坏!<br>请提前在铁匠铺修理。',
+      t7_t5_title: '死亡 vs 逃脱', t7_t5_body: '<b>逃脱</b>: 层数 × 8 + 击杀 × 1 金币 + 物品掉落<br><b>死亡</b>: 装备<b>全部损坏</b> + 层数对应金币。<br>危险时尽快逃脱!',
+      t7_t6_title: '技能点', t7_t6_body: '每5层获得<b>技能点(SP)</b>。<br>升级<b>被动</b>: 战士训练/铁壁防御/迅捷/坚韧。<br>死亡也保留SP。',
+      t7_t7_title: '挑战!', t7_t7_body: '越深怪物越强,奖励也越大。<br>装备 → 地下城 → 金币 → 更好装备的循环!',
+    },
+  };
+  function t(key, params) {
+    const dict = _I18N[_LANG] || _I18N.ko;
+    let s = dict[key] || _I18N.ko[key] || key;
+    if (params) for (const k in params) s = s.split('{' + k + '}').join(String(params[k]));
+    return s;
+  }
+  function applyHtmlI18n() {
+    try { document.documentElement.lang = _LANG; document.title = t('page_title'); } catch {}
+    const setText = (sel, key) => { const el = document.querySelector(sel); if (el) el.textContent = t(key); };
+    setText('.select-title', 'select_title');
+    // 보유 장비 헤더 (안에 span이 있어서 첫 번째 텍스트노드만 교체)
+    const invHdr = document.querySelector('.inv-panel-hdr');
+    if (invHdr && invHdr.firstChild && invHdr.firstChild.nodeType === Node.TEXT_NODE) {
+      invHdr.firstChild.nodeValue = t('owned_equipment') + ' ';
+    }
+    setText('.inv-hint', 'drag_hint');
+    // 슬롯 라벨
+    document.querySelectorAll('.doll-slot').forEach(el => {
+      const slot = el.dataset.slot;
+      const lbl = el.querySelector('.doll-slot-label');
+      const key = slot === 'weapon' ? 'slot_weapon' : slot === 'head' ? 'slot_head' :
+                  slot === 'accessory' ? 'slot_accessory' : slot === 'chest' ? 'slot_chest' :
+                  slot === 'gloves' ? 'slot_gloves' : slot === 'pants' ? 'slot_pants' :
+                  slot === 'boots' ? 'slot_boots' : null;
+      if (lbl && key) lbl.textContent = t(key);
+    });
+    // 스킬 패널 헤더 (안에 span 있음)
+    const skHdr = document.querySelector('.skill-panel-hdr');
+    if (skHdr && skHdr.firstChild && skHdr.firstChild.nodeType === Node.TEXT_NODE) {
+      skHdr.firstChild.nodeValue = t('passive_skills') + ' ';
+    }
+    setText('#btn-enter', 'btn_enter');
+    // HUD
+    document.querySelectorAll('.hud-stat .hud-lbl').forEach(el => {
+      if (el.textContent === 'HP') el.textContent = t('hud_hp');
+      else if (el.textContent === '내구') el.textContent = t('hud_durability');
+    });
+    const staLbl = document.querySelector('.hud-sta-row .hud-lbl');
+    if (staLbl) staLbl.textContent = t('hud_stamina');
+    const eqHud = document.getElementById('equip-name-hud');
+    if (eqHud && eqHud.textContent === '맨손') eqHud.textContent = t('bare_hands');
+    const arHud = document.getElementById('armor-name-hud');
+    if (arHud && arHud.textContent === '방어구 없음') arHud.textContent = t('no_armor');
+    // 반응 프롬프트
+    setText('.rp-dodge', 'rp_dodge');
+    setText('#rp-counter', 'rp_counter');
+    // 장비 패널 헤더 (안에 button 있음)
+    const eqPanelHdr = document.querySelector('.equip-panel-hdr');
+    if (eqPanelHdr && eqPanelHdr.firstChild && eqPanelHdr.firstChild.nodeType === Node.TEXT_NODE) {
+      eqPanelHdr.firstChild.nodeValue = t('equipment_status') + ' ';
+    }
+    // 사망 화면
+    document.querySelectorAll('.dead-title').forEach(el => {
+      if (el.textContent === '전투 불능') el.textContent = t('dead_title');
+      else if (el.textContent === '탈출 성공!') el.textContent = t('escaped_title');
+    });
+    setText('#btn-restart', 'restart_btn');
+    setText('#btn-escaped-back', 'escaped_back');
+    // 장비 패널 버튼 title
+    const btnEqPanel = document.getElementById('btn-equip-panel');
+    if (btnEqPanel) btnEqPanel.title = t('equipment_status_title');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyHtmlI18n);
+  else applyHtmlI18n();
+
   /* ── 캐릭터 위젯 — React 컴포넌트와 동일 기능 (드래그 바, 리사이즈 핸들, localStorage 저장) ── */
   function mountCharacterWidget(userId, { app = 'platform', bottomOffset = 0, storageKey = 'charwidget' } = {}) {
     if (document.getElementById('assistant-widget')) return;
@@ -147,7 +418,7 @@
     const helpBtn = document.createElement('button');
     helpBtn.id = '_tutorial-help-btn';
     helpBtn.textContent = '?';
-    helpBtn.title = '튜토리얼 다시 보기';
+    helpBtn.title = t('tutorial_help');
     helpBtn.style.cssText = `position:fixed;top:${helpButtonPos.top}px;left:${helpButtonPos.left}px;width:36px;height:36px;border-radius:50%;background:rgba(30,30,40,0.85);color:#fff;border:1.5px solid rgba(255,255,255,0.4);font-size:18px;font-weight:bold;cursor:pointer;z-index:9998;box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:transform 0.15s;`;
     helpBtn.addEventListener('mouseenter', () => helpBtn.style.transform = 'scale(1.1)');
     helpBtn.addEventListener('mouseleave', () => helpBtn.style.transform = 'scale(1)');
@@ -187,12 +458,12 @@
       card.appendChild(nav);
 
       const prevBtn = document.createElement('button');
-      prevBtn.textContent = '이전';
+      prevBtn.textContent = t('t_prev');
       prevBtn.style.cssText = 'flex:1;padding:10px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;font-size:14px;';
       nav.appendChild(prevBtn);
 
       const skipBtn = document.createElement('button');
-      skipBtn.textContent = '건너뛰기';
+      skipBtn.textContent = t('t_skip');
       skipBtn.style.cssText = 'flex:1;padding:10px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:8px;cursor:pointer;font-size:14px;';
       nav.appendChild(skipBtn);
 
@@ -202,7 +473,7 @@
 
       const dontShow = document.createElement('label');
       dontShow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer;justify-content:center;';
-      dontShow.innerHTML = '<input type="checkbox" id="_tutorial-dontshow" style="cursor:pointer;"> 다시 보지 않기';
+      dontShow.innerHTML = '<input type="checkbox" id="_tutorial-dontshow" style="cursor:pointer;"> ' + t('t_dont_show');
       card.appendChild(dontShow);
 
       function render() {
@@ -211,7 +482,7 @@
         title.textContent = s.title || '';
         body.innerHTML = s.body || '';
         prevBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
-        nextBtn.textContent = idx === steps.length - 1 ? '시작!' : '다음';
+        nextBtn.textContent = idx === steps.length - 1 ? t('t_start') : t('t_next');
         dots.innerHTML = '';
         steps.forEach((_, i) => {
           const d = document.createElement('div');
@@ -496,7 +767,7 @@
   if (platformWeb) {
     const btn = document.createElement('a');
     btn.href = platformWeb + '/games';
-    btn.textContent = '← 게임 목록';
+    btn.textContent = t('back_to_games');
     btn.style.cssText = [
       'position:fixed;top:12px;left:12px;z-index:9999',
       'background:rgba(255,255,255,0.07);color:#aaa',
@@ -1772,7 +2043,7 @@
     if (wrapper.curDur === 0) {
       const eq = wrapper.equip || wrapper;
       spawnFx(player.px+TS/2, player.py-10, `${label} 파괴!`, '#ff5722', 1200);
-      toast(`💥 ${eq.name} 파괴됨!`);
+      toast(t('toast_equip_broken', { name: eq.name }));
       deleteEquipFromServer(eq.id);
       delete player.equippedSlots[slotId];
       const a = calcArmorTotals();
@@ -1860,7 +2131,7 @@
     if (!activeEq) return;
     const eq = activeEq.equip;
     spawnFx(player.px+TS/2, player.py-10, '무기 파괴!', '#ff5722', 1200);
-    toast(`💥 ${eq.name} 파괴됨!`);
+    toast(t('toast_equip_broken', { name: eq.name }));
     deleteEquipFromServer(eq.id);
     const idx = player.inventory.indexOf(activeEq);
     if (idx !== -1) player.inventory.splice(idx, 1);
@@ -3475,20 +3746,13 @@
     mountTutorial({
       storageKey: 'game7_tutorial',
       steps: [
-        { emoji: '⚔️', title: '던전 탐험에 오신 걸 환영해요!',
-          body: '몬스터를 처치하고 층을 내려가며 보상을 모으세요.<br>죽지 않고 탈출하는 게 핵심이에요!' },
-        { emoji: '🎮', title: '조작법',
-          body: '<b>마우스 클릭</b>: 이동/공격<br><b>스킬 버튼</b>: 액티브 스킬 사용<br>몬스터에 가까이 가면 자동으로 공격해요.' },
-        { emoji: '🛡️', title: '장비 장착',
-          body: '입장 전 <b>장비 슬롯</b>(무기/머리/상의/하의/손/발/악세서리)에<br>대장간에서 만든 장비를 끼우세요.<br>장비 없이도 진입은 가능하지만 약해요.' },
-        { emoji: '⚠️', title: '내구도 주의',
-          body: '몬스터에 맞으면 장비 <b>내구도가 닳아요</b>.<br>30% 이하면 경고 표시, 0이 되면 파괴됩니다!<br>대장간에서 미리 수리하세요.' },
-        { emoji: '💀', title: '사망 vs 탈출',
-          body: '<b>탈출 성공</b>: 층수 × 8 + 킬 × 1 코인 + 아이템 드롭<br><b>사망</b>: 장착 장비 <b>전부 파괴</b> + 층수만큼 코인.<br>위험할 땐 빨리 탈출하세요!' },
-        { emoji: '⭐', title: '스킬 포인트',
-          body: '5층마다 <b>스킬 포인트(SP)</b>를 얻어요.<br>전사 훈련/철벽 방어/신속/강인함 등 <b>패시브</b>를 강화하세요.<br>죽어도 SP는 유지돼요.' },
-        { emoji: '🏆', title: '도전!',
-          body: '깊이 들어갈수록 몬스터가 강해지고 보상도 커져요.<br>장비 → 던전 → 코인 → 더 좋은 장비의 사이클!' },
+        { emoji: '⚔️', title: t('t7_t1_title'), body: t('t7_t1_body') },
+        { emoji: '🎮', title: t('t7_t2_title'), body: t('t7_t2_body') },
+        { emoji: '🛡️', title: t('t7_t3_title'), body: t('t7_t3_body') },
+        { emoji: '⚠️', title: t('t7_t4_title'), body: t('t7_t4_body') },
+        { emoji: '💀', title: t('t7_t5_title'), body: t('t7_t5_body') },
+        { emoji: '⭐', title: t('t7_t6_title'), body: t('t7_t6_body') },
+        { emoji: '🏆', title: t('t7_t7_title'), body: t('t7_t7_body') },
       ],
     });
   });
