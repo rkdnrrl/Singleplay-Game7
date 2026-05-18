@@ -17,28 +17,40 @@
       blocked: false,
     };
 
+    const TOOLBAR_H = 32;
+
     const wrapper = document.createElement('div');
     wrapper.id = 'assistant-widget';
     const pos0 = state.pos.x >= 0 ? `left:${state.pos.x}px;top:${state.pos.y}px;` : `right:0;bottom:${bottomOffset}px;`;
-    wrapper.style.cssText = `position:fixed;${pos0}width:${state.size.w}px;height:${state.size.h}px;z-index:9999;background:transparent;`;
+    wrapper.style.cssText = `position:fixed;${pos0}width:${state.size.w}px;height:${state.size.h + TOOLBAR_H}px;z-index:9999;background:transparent;`;
+
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = `position:absolute;top:0;left:0;right:0;height:${TOOLBAR_H}px;display:flex;align-items:center;background:rgba(30,30,40,0.85);border-radius:8px 8px 0 0;box-shadow:0 -1px 0 rgba(255,255,255,0.15) inset;z-index:3;`;
+    wrapper.appendChild(toolbar);
 
     const resizeHandle = document.createElement('div');
-    resizeHandle.style.cssText = 'position:absolute;top:0;left:0;width:32px;height:32px;z-index:2;cursor:nwse-resize;display:flex;align-items:center;justify-content:center;';
+    resizeHandle.style.cssText = `width:32px;height:${TOOLBAR_H}px;cursor:nwse-resize;display:flex;align-items:center;justify-content:center;`;
     const resizeInner = document.createElement('div');
-    resizeInner.style.cssText = 'width:14px;height:14px;border-top:3px solid rgba(0,0,0,0.6);border-left:3px solid rgba(0,0,0,0.6);border-radius:2px 0 0 0;filter:drop-shadow(0 0 1px rgba(255,255,255,0.9));';
+    resizeInner.style.cssText = 'width:12px;height:12px;border-top:2.5px solid #fff;border-left:2.5px solid #fff;border-radius:2px 0 0 0;';
     resizeHandle.appendChild(resizeInner);
-    wrapper.appendChild(resizeHandle);
+    toolbar.appendChild(resizeHandle);
 
     const dragBar = document.createElement('div');
-    dragBar.style.cssText = 'position:absolute;top:0;left:32px;right:0;height:28px;z-index:2;cursor:grab;display:flex;align-items:center;justify-content:center;';
-    const dragInner = document.createElement('div');
-    dragInner.style.cssText = 'width:48px;height:6px;border-radius:3px;background:rgba(0,0,0,0.55);box-shadow:0 0 0 1px rgba(255,255,255,0.7),0 1px 2px rgba(0,0,0,0.3);';
-    dragBar.appendChild(dragInner);
-    wrapper.appendChild(dragBar);
+    dragBar.style.cssText = `flex:1;height:${TOOLBAR_H}px;cursor:grab;display:flex;align-items:center;justify-content:center;`;
+    const dragInner1 = document.createElement('div');
+    dragInner1.style.cssText = 'width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.6);';
+    const dragInner2 = document.createElement('div');
+    dragInner2.style.cssText = 'width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.6);margin-left:4px;';
+    dragBar.appendChild(dragInner1); dragBar.appendChild(dragInner2);
+    toolbar.appendChild(dragBar);
 
     const blocker = document.createElement('div');
     blocker.style.cssText = 'position:absolute;inset:0;z-index:1;display:none;';
     wrapper.appendChild(blocker);
+
+    const iframeArea = document.createElement('div');
+    iframeArea.style.cssText = `position:absolute;top:${TOOLBAR_H}px;left:0;right:0;bottom:0;`;
+    wrapper.appendChild(iframeArea);
 
     const iframe = document.createElement('iframe');
     iframe.src = `${IFRAME_SRC}?userId=${encodeURIComponent(userId)}&app=${encodeURIComponent(app)}`;
@@ -48,7 +60,7 @@
       iframe.style.cssText = `width:${NATURAL_W}px;height:${NATURAL_H}px;border:none;background:transparent;pointer-events:${state.blocked ? 'none' : 'auto'};transform:scale(${scale});transform-origin:bottom right;position:absolute;bottom:0;right:0;will-change:transform;`;
     }
     applyIframeStyle();
-    wrapper.appendChild(iframe);
+    iframeArea.appendChild(iframe);
     document.body.appendChild(wrapper);
 
     function setBlocked(b) { state.blocked = b; blocker.style.display = b ? 'block' : 'none'; applyIframeStyle(); }
@@ -69,8 +81,9 @@
       function onMove(ev) {
         if (ev.cancelable) ev.preventDefault();
         const t = ev.touches ? ev.touches[0] : ev;
+        const wrapperH = state.size.h + TOOLBAR_H;
         const nx = Math.max(0, Math.min(window.innerWidth  - state.size.w, sX + t.clientX - sMx));
-        const ny = Math.max(0, Math.min(window.innerHeight - state.size.h, sY + t.clientY - sMy));
+        const ny = Math.max(0, Math.min(window.innerHeight - wrapperH,    sY + t.clientY - sMy));
         state.pos = { x: nx, y: ny };
         wrapper.style.left = nx + 'px'; wrapper.style.top = ny + 'px';
       }
@@ -95,7 +108,7 @@
         const nw = Math.max(MIN_W, Math.min(MAX_W, sW + delta));
         state.size = { w: Math.round(nw), h: Math.round(nw * ASPECT) };
         wrapper.style.width = state.size.w + 'px';
-        wrapper.style.height = state.size.h + 'px';
+        wrapper.style.height = (state.size.h + TOOLBAR_H) + 'px';
         applyIframeStyle();
       }
       function onUp() {
@@ -113,8 +126,10 @@
 
     document.addEventListener('mousemove', (e) => {
       const p = state.pos, s = state.size;
-      const elX = p.x >= 0 ? p.x : window.innerWidth  - s.w;
-      const elY = p.y >= 0 ? p.y : window.innerHeight - s.h - bottomOffset;
+      const wrapperLeft = p.x >= 0 ? p.x : window.innerWidth  - s.w;
+      const wrapperTop  = p.y >= 0 ? p.y : window.innerHeight - (s.h + TOOLBAR_H) - bottomOffset;
+      const elX = wrapperLeft;
+      const elY = wrapperTop + TOOLBAR_H;
       const scale = s.w / NATURAL_W;
       iframe.contentWindow && iframe.contentWindow.postMessage({
         type: 'assistant:mousemove',
