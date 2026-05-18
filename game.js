@@ -76,6 +76,43 @@
       mute: '음소거', unmute: '🔇 음소거 해제',
       no_equipment: '장비',
       equip_status_no_conn: '연결 없음 — 맨손으로 입장하거나 게임에서 열어 주세요.',
+      session_expired: '🔒 로그인이 만료됐습니다. 다시 로그인해 주세요.',
+      session_login_btn: '로그인',
+      dur_remaining: '내구',
+      coins_earned_line: '\n🪙 {n}코인 획득',
+      all_gear_destroyed: '\n⚠️ 착용 장비가 모두 파괴되었습니다',
+      items_gained_line: '\n\n💎 획득 아이템: {list}',
+      sp_gained_line: '\n⭐ 스킬 포인트 +{n}',
+      floor_arrived: '🏰 B{n}F 도착!',
+      mod_exhausted: '🛡️ {name} 소진!',
+      armor_about_to_break: '⚠️ {label}가 곧 부숴질 것 같습니다!',
+      weapon_about_to_break: '⚠️ 무기가 곧 부숴질 것 같습니다!',
+      mod_broken: '🔩 {name} 모듈 파손!',
+      equip_default: '장비',
+      equip_worn: '⚔️ {name} 장착!',
+      dur_none: '없음',
+      rest_short: '⛺ 휴식',
+      counter_perfect: '⚡ Space 완벽 반격!',
+      counter_btn: '⚡ Space 반격',
+      dead_text: '전투 불능\n{lines}',
+      escaped_text: '탈출 성공!\n{lines}',
+      loading_equip: '장비 불러오는 중…',
+      loading_equip_fail: '장비 불러오기 실패 — 맨손으로 입장합니다.',
+      enter_with: '⚔️ 입장 ({n}개 장착)',
+      enter_no: '⚔️ 입장',
+      no_slot_gear: '해당 슬롯 장비 없음',
+      no_owned_gear: '보유 장비가 없습니다',
+      no_equipped_gear: '장착된 장비가 없습니다',
+      n_count: '{n}개',
+      none_label: '없음',
+      repair_all_btn: '🔧 전체 수리',
+      repair_20_btn: '🔧 +20',
+      repair_full_btn: '🔩 완전',
+      weapon_dur_recovered: '🔧 무기 내구도 +{n} 회복',
+      gear_dur_recovered: '🔧 {name} 내구도 +{n} 회복',
+      gear_full_recovered: '🔩 {name} 완전 회복!',
+      repair_full_n_times: '🔧 전체 수리 완료 ({n}회)',
+      mod_dur_recovered: '🔩 {name} 모듈 내구도 +{n}',
       // 튜토리얼
       t7_t1_title: '던전 탐험에 오신 걸 환영해요!', t7_t1_body: '몬스터를 처치하고 층을 내려가며 보상을 모으세요.<br>죽지 않고 탈출하는 게 핵심이에요!',
       t7_t2_title: '조작법', t7_t2_body: '<b>마우스 클릭</b>: 이동/공격<br><b>스킬 버튼</b>: 액티브 스킬 사용<br>몬스터에 가까이 가면 자동으로 공격해요.',
@@ -143,6 +180,43 @@
       mute: 'Mute', unmute: '🔇 Unmute',
       no_equipment: 'Gear',
       equip_status_no_conn: 'No connection — enter bare-handed or open from game.',
+      session_expired: '🔒 Session expired. Please log in again.',
+      session_login_btn: 'Log in',
+      dur_remaining: 'DUR',
+      coins_earned_line: '\n🪙 +{n} coins',
+      all_gear_destroyed: '\n⚠️ All equipped gear destroyed',
+      items_gained_line: '\n\n💎 Items: {list}',
+      sp_gained_line: '\n⭐ Skill Point +{n}',
+      floor_arrived: '🏰 B{n}F reached!',
+      mod_exhausted: '🛡️ {name} depleted!',
+      armor_about_to_break: '⚠️ {label} about to break!',
+      weapon_about_to_break: '⚠️ Weapon about to break!',
+      mod_broken: '🔩 {name} module broken!',
+      equip_default: 'Gear',
+      equip_worn: '⚔️ {name} equipped!',
+      dur_none: 'None',
+      rest_short: '⛺ Rest',
+      counter_perfect: '⚡ Space perfect counter!',
+      counter_btn: '⚡ Space counter',
+      dead_text: 'Defeated\n{lines}',
+      escaped_text: 'Escaped!\n{lines}',
+      loading_equip: 'Loading gear…',
+      loading_equip_fail: 'Failed to load gear — entering bare-handed.',
+      enter_with: '⚔️ Enter ({n} equipped)',
+      enter_no: '⚔️ Enter',
+      no_slot_gear: 'No gear for this slot',
+      no_owned_gear: 'No gear owned',
+      no_equipped_gear: 'No equipped gear',
+      n_count: '{n}',
+      none_label: 'None',
+      repair_all_btn: '🔧 Repair all',
+      repair_20_btn: '🔧 +20',
+      repair_full_btn: '🔩 Full',
+      weapon_dur_recovered: '🔧 Weapon DUR +{n}',
+      gear_dur_recovered: '🔧 {name} DUR +{n}',
+      gear_full_recovered: '🔩 {name} fully restored!',
+      repair_full_n_times: '🔧 Full repair done ({n}x)',
+      mod_dur_recovered: '🔩 {name} module DUR +{n}',
       t7_t1_title: 'Welcome to Dungeon Exploration!', t7_t1_body: 'Slay monsters, descend floors, collect rewards.<br>Survive and escape!',
       t7_t2_title: 'Controls', t7_t2_body: '<b>Mouse click</b>: Move/attack<br><b>Skill buttons</b>: Use active skills<br>You auto-attack monsters when in range.',
       t7_t3_title: 'Equip Gear', t7_t3_body: 'Before entering, equip <b>gear</b>(weapon/head/chest/pants/hands/feet/accessory)<br>crafted at the Blacksmith.<br>You can enter naked, but you\'ll be fragile.',
@@ -209,6 +283,43 @@
       mute: 'ミュート', unmute: '🔇 ミュート解除',
       no_equipment: '装備',
       equip_status_no_conn: '接続なし — 素手で入場するか、ゲームから開いてください。',
+      session_expired: '🔒 ログインの有効期限が切れました。再度ログインしてください。',
+      session_login_btn: 'ログイン',
+      dur_remaining: '耐久',
+      coins_earned_line: '\n🪙 +{n}コイン',
+      all_gear_destroyed: '\n⚠️ 装備が全て破壊されました',
+      items_gained_line: '\n\n💎 獲得アイテム: {list}',
+      sp_gained_line: '\n⭐ スキルポイント +{n}',
+      floor_arrived: '🏰 B{n}F 到着!',
+      mod_exhausted: '🛡️ {name} 消耗!',
+      armor_about_to_break: '⚠️ {label}が壊れそうです!',
+      weapon_about_to_break: '⚠️ 武器が壊れそうです!',
+      mod_broken: '🔩 {name} モジュール破損!',
+      equip_default: '装備',
+      equip_worn: '⚔️ {name} 装着!',
+      dur_none: 'なし',
+      rest_short: '⛺ 休憩',
+      counter_perfect: '⚡ Space 完璧カウンター!',
+      counter_btn: '⚡ Space カウンター',
+      dead_text: '戦闘不能\n{lines}',
+      escaped_text: '脱出成功!\n{lines}',
+      loading_equip: '装備読み込み中…',
+      loading_equip_fail: '装備読み込み失敗 — 素手で入場します。',
+      enter_with: '⚔️ 入場 ({n}個装着)',
+      enter_no: '⚔️ 入場',
+      no_slot_gear: 'このスロットの装備なし',
+      no_owned_gear: '所持装備なし',
+      no_equipped_gear: '装着装備なし',
+      n_count: '{n}個',
+      none_label: 'なし',
+      repair_all_btn: '🔧 全て修理',
+      repair_20_btn: '🔧 +20',
+      repair_full_btn: '🔩 完全',
+      weapon_dur_recovered: '🔧 武器耐久 +{n}',
+      gear_dur_recovered: '🔧 {name} 耐久 +{n}',
+      gear_full_recovered: '🔩 {name} 完全回復!',
+      repair_full_n_times: '🔧 全修理完了 ({n}回)',
+      mod_dur_recovered: '🔩 {name} モジュール耐久 +{n}',
       t7_t1_title: 'ダンジョン探索へようこそ!', t7_t1_body: 'モンスターを倒し、階層を下りて報酬を集めましょう。<br>死なずに脱出するのがカギ!',
       t7_t2_title: '操作方法', t7_t2_body: '<b>マウスクリック</b>: 移動/攻撃<br><b>スキルボタン</b>: アクティブスキル<br>モンスターに近づくと自動で攻撃します。',
       t7_t3_title: '装備の装着', t7_t3_body: '入場前に<b>装備スロット</b>(武器/頭/胴/ズボン/手/足/アクセサリ)に<br>鍛冶屋で作った装備を装着しましょう。<br>素手でも入れますが弱いです。',
@@ -275,6 +386,43 @@
       mute: '静音', unmute: '🔇 取消静音',
       no_equipment: '装备',
       equip_status_no_conn: '无连接 — 赤手入场或从游戏内打开。',
+      session_expired: '🔒 登录已过期。请重新登录。',
+      session_login_btn: '登录',
+      dur_remaining: '耐久',
+      coins_earned_line: '\n🪙 +{n}金币',
+      all_gear_destroyed: '\n⚠️ 装备全部损坏',
+      items_gained_line: '\n\n💎 获得物品: {list}',
+      sp_gained_line: '\n⭐ 技能点 +{n}',
+      floor_arrived: '🏰 B{n}F 到达!',
+      mod_exhausted: '🛡️ {name} 耗尽!',
+      armor_about_to_break: '⚠️ {label}即将损坏!',
+      weapon_about_to_break: '⚠️ 武器即将损坏!',
+      mod_broken: '🔩 {name} 模块损坏!',
+      equip_default: '装备',
+      equip_worn: '⚔️ {name} 装备!',
+      dur_none: '无',
+      rest_short: '⛺ 休息',
+      counter_perfect: '⚡ Space 完美反击!',
+      counter_btn: '⚡ Space 反击',
+      dead_text: '战斗不能\n{lines}',
+      escaped_text: '逃脱成功!\n{lines}',
+      loading_equip: '加载装备中…',
+      loading_equip_fail: '加载装备失败 — 赤手入场。',
+      enter_with: '⚔️ 进入 ({n}个装备)',
+      enter_no: '⚔️ 进入',
+      no_slot_gear: '该槽位无装备',
+      no_owned_gear: '无持有装备',
+      no_equipped_gear: '无装备',
+      n_count: '{n}个',
+      none_label: '无',
+      repair_all_btn: '🔧 全部修理',
+      repair_20_btn: '🔧 +20',
+      repair_full_btn: '🔩 完全',
+      weapon_dur_recovered: '🔧 武器耐久 +{n}',
+      gear_dur_recovered: '🔧 {name} 耐久 +{n}',
+      gear_full_recovered: '🔩 {name} 完全恢复!',
+      repair_full_n_times: '🔧 全部修理完成 ({n}次)',
+      mod_dur_recovered: '🔩 {name} 模块耐久 +{n}',
       t7_t1_title: '欢迎来到地下城探险!', t7_t1_body: '击败怪物,下到更深层,收集奖励。<br>不死并逃脱是关键!',
       t7_t2_title: '操作方法', t7_t2_body: '<b>鼠标点击</b>: 移动/攻击<br><b>技能按钮</b>: 使用主动技能<br>靠近怪物时会自动攻击。',
       t7_t3_title: '装备装着', t7_t3_body: '进入前装备<b>装备槽</b>(武器/头/胸/裤/手/脚/饰品)<br>在铁匠铺制作的装备。<br>赤手也能进但很脆弱。',
@@ -777,11 +925,11 @@
     const muteRow = document.createElement('div');
     muteRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:2px;';
     const muteBtn = document.createElement('button');
-    muteBtn.textContent = '음소거';
+    muteBtn.textContent = tr('mute');
     muteBtn.style.cssText = 'flex:1;background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:5px;padding:4px;cursor:pointer;font-size:12px;';
     muteBtn.addEventListener('click', () => {
       _soundEnabled = !_soundEnabled;
-      muteBtn.textContent = _soundEnabled ? '음소거' : '🔇 음소거 해제';
+      muteBtn.textContent = _soundEnabled ? tr('mute') : tr('unmute');
       btn.textContent = _soundEnabled ? '🔊' : '🔇';
       if (_soundEnabled) { _resume(); if (_bgmActive) { stopBGM(); startBGM(); } }
       else stopBGM();
@@ -864,8 +1012,8 @@
     const el = document.createElement('div');
     el.style.cssText = 'position:fixed;inset:0 0 auto;z-index:99999;background:#dc2626;color:#fff;' +
       'padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.4)';
-    el.innerHTML = '<span>🔒 로그인이 만료됐습니다. 다시 로그인해 주세요.</span>' +
-      '<a href="/ko/login" style="background:#fff;color:#dc2626;padding:4px 12px;border-radius:6px;font-weight:600;text-decoration:none">로그인</a>';
+    el.innerHTML = '<span>' + tr('session_expired') + '</span>' +
+      '<a href="/' + _LANG + '/login" style="background:#fff;color:#dc2626;padding:4px 12px;border-radius:6px;font-weight:600;text-decoration:none">' + tr('session_login_btn') + '</a>';
     document.body.prepend(el);
   }
   function apiFetch(url, init) {
@@ -1820,8 +1968,8 @@
           if (!res) return;
           const el = document.getElementById('dead-stats');
           if (!el) return;
-          if (res.coinsEarned > 0) el.textContent += `\n🪙 ${res.coinsEarned}코인 획득`;
-          el.textContent += `\n⚠️ 착용 장비가 모두 파괴되었습니다`;
+          if (res.coinsEarned > 0) el.textContent += tr('coins_earned_line', { n: res.coinsEarned });
+          el.textContent += tr('all_gear_destroyed');
         }).catch(() => {});
       }
       setGameState('dead');
@@ -1957,10 +2105,10 @@
         if (!el) return;
         const NAMES = { stone_common:'일반석', stone_rare:'희귀석', crystal_magic:'마정석', shard_legend:'전설파편' };
         const dropParts = Object.entries(res.drops || {}).map(([k, v]) => `${NAMES[k]||k} ×${v}`);
-        if (dropParts.length) el.textContent += `\n\n💎 획득 아이템: ${dropParts.join(', ')}`;
-        if (res.coinsEarned > 0) el.textContent += `\n🪙 ${res.coinsEarned}코인 획득`;
+        if (dropParts.length) el.textContent += tr('items_gained_line', { list: dropParts.join(', ') });
+        if (res.coinsEarned > 0) el.textContent += tr('coins_earned_line', { n: res.coinsEarned });
         if (res.skillPointsGained > 0) {
-          el.textContent += `\n⭐ 스킬 포인트 +${res.skillPointsGained}`;
+          el.textContent += tr('sp_gained_line', { n: res.skillPointsGained });
           _skillPoints += res.skillPointsGained;
         }
       }).catch(() => {});
@@ -1982,7 +2130,7 @@
     } else if (floor % 5 === 4) {
       toast(tr('pre_boss_floor', { n: floor }));
     } else {
-      toast(`🏰 B${floor}F 도착!`);
+      toast(tr('floor_arrived', { n: floor }));
     }
     SFX.stairs();
     hudDirty = true;
@@ -2099,7 +2247,7 @@
       const next = Math.max(0, (player.moduleDurabilities[bufMod.id] || 0) - 1);
       player.moduleDurabilities[bufMod.id] = next;
       if (next === 0) {
-        toast(`🛡️ ${bufMod.name} 소진!`);
+        toast(tr('mod_exhausted', { name: bufMod.name }));
         spawnFx(player.px + TS/2, player.py - 10, `완충재 소진!`, '#ff9800', 1000);
         _recomputePlayerStats();
         hudDirty = true;
@@ -2114,7 +2262,7 @@
     const armorMaxDur = wrapper.maxDur || wrapper.equip?.stats?.durabilityMax || 1;
     const armorWarnThresh = Math.ceil(armorMaxDur * 0.3);
     if (wrapper.curDur > 0 && wrapper.curDur <= armorWarnThresh && prevArmorDur > armorWarnThresh) {
-      toast(`⚠️ ${label}가 곧 부숴질 것 같습니다!`);
+      toast(tr('armor_about_to_break', { label: label }));
       spawnFx(player.px+TS/2, player.py-18, `${label} 위험!`, '#ff9800', 1200);
     }
     if (wrapper.curDur === 0) {
@@ -2147,7 +2295,7 @@
       const next = Math.max(0, (player.moduleDurabilities[bufMod.id] || 0) - 1);
       player.moduleDurabilities[bufMod.id] = next;
       if (next === 0) {
-        toast(`🛡️ ${bufMod.name} 소진!`);
+        toast(tr('mod_exhausted', { name: bufMod.name }));
         spawnFx(player.px + TS/2, player.py - 10, `완충재 소진!`, '#ff9800', 1000);
         _recomputePlayerStats();
         hudDirty = true;
@@ -2161,7 +2309,7 @@
     // 30% 이하 진입 시 경고 (한 번만)
     const weapWarnThresh = Math.ceil(player.durabilityMax * 0.3);
     if (player.durability > 0 && player.durability <= weapWarnThresh && prevWeapDur > weapWarnThresh) {
-      toast(`⚠️ 무기가 곧 부숴질 것 같습니다!`);
+      toast(tr('weapon_about_to_break'));
       spawnFx(player.px+TS/2, player.py-18, `무기 위험!`, '#ff9800', 1200);
     }
     if (player.durability === 0) destroyWeapon();
@@ -2193,7 +2341,7 @@
         const next = Math.max(0, cur - decay);
         player.moduleDurabilities[mod.id] = next;
         if (next === 0 && cur > 0) {
-          toast(`🔩 ${mod.name} 모듈 파손!`);
+          toast(tr('mod_broken', { name: mod.name }));
           spawnFx(player.px + TS/2, player.py - 10, `${mod.name} 파손`, '#ff9800', 1000);
           // Recalculate player stats without the broken module
           _recomputePlayerStats();
@@ -2223,7 +2371,7 @@
       player.baseAtk = 5 + a.atk;
       player.baseDef = a.def;
       player.moveDelay = Math.round(MOVE_BASE_MS * (1 - Math.min(0.5, a.spd)));
-      if ($equipNameHud) $equipNameHud.textContent = '맨손';
+      if ($equipNameHud) $equipNameHud.textContent = tr('bare_hands');
     }
     hudDirty = true;
   }
@@ -2239,7 +2387,7 @@
       if (tot.hp  > 0) parts.push(`❤️+${tot.hp}`);
       const broken = Object.values(player.equippedSlots).filter(w => w && w.curDur <= 0).length;
       if (broken > 0) parts.push(`💥${broken}파괴`);
-      $armorNameHud.textContent = parts.length ? parts.join(' ') : '방어구 없음';
+      $armorNameHud.textContent = parts.length ? parts.join(' ') : tr('no_armor');
     }
 
     // 방어구 내구도 행
@@ -2279,8 +2427,8 @@
     player.durabilityMax = invItem.maxDur;
     player.durability    = invItem.curDur;
     player.durBroken     = invItem.curDur <= 0;
-    $equipNameHud.textContent = invItem.equip.name || '장비';
-    if (cur) toast(`⚔️ ${invItem.equip.name} 장착!`);
+    $equipNameHud.textContent = invItem.equip.name || tr('equip_default');
+    if (cur) toast(tr('equip_worn', { name: invItem.equip.name }));
     hudDirty = true;
   }
 
@@ -2638,10 +2786,10 @@
       $durText.textContent = `${player.durability}/${player.durabilityMax}`;
     } else {
       $durBar.style.width = '0%';
-      $durText.textContent = '없음';
+      $durText.textContent = tr('dur_none');
     }
 
-    $floorLbl.textContent = isRestFloor ? '⛺ 휴식' : `B${floor}F`;
+    $floorLbl.textContent = isRestFloor ? tr('rest_short') : tr('floor_format', { n: floor });
 
     // 스태미나 바
     const staPct = player.stamina / STA_MAX * 100;
@@ -2719,7 +2867,7 @@
     const inPerf = elapsed>=CTR_START && elapsed<=PERF_END;
     $rpCounter.className = 'rp-counter-btn' + (inPerf ? ' perfect' : '');
     $rpCounter.style.opacity = inWin ? '1' : '0.35';
-    $rpCounter.textContent   = inPerf ? '⚡ Space 완벽 반격!' : '⚡ Space 반격';
+    $rpCounter.textContent   = inPerf ? tr('counter_perfect') : tr('counter_btn');
 
     $rpPrompt.classList.remove('hidden');
   }
@@ -2803,10 +2951,10 @@
       const baseLine   = `B${floor}F · 처치 ${player.kills}마리 · 경험치 ${player.xp}`;
 
       if (s === 'dead') {
-        $deadStats.textContent = `전투 불능\n${baseLine}${recordLine}`;
+        $deadStats.textContent = tr('dead_text', { lines: baseLine + recordLine });
       } else {
         const el = document.getElementById('escaped-stats');
-        if (el) el.textContent = `탈출 성공!\n${baseLine}${recordLine}`;
+        if (el) el.textContent = tr('escaped_text', { lines: baseLine + recordLine });
       }
     }
     if (s === 'playing') {
@@ -2926,7 +3074,7 @@
       }
     }
 
-    $equipNameHud.textContent = player.equipment ? (player.equipment.name || '장비') : '맨손';
+    $equipNameHud.textContent = player.equipment ? (player.equipment.name || tr('equip_default')) : tr('bare_hands');
     updateArmorHud();
   }
 
@@ -3067,7 +3215,7 @@
       player.durabilityMax = firstEquip.maxDur;
       player.durability    = firstEquip.curDur;
       totalHp += wms.hp;
-      $equipNameHud.textContent = firstEquip.equip.name || '장비';
+      $equipNameHud.textContent = firstEquip.equip.name || tr('equip_default');
     }
 
     player.maxHp = 100 + player.baseDef * 5 + totalHp;
@@ -3086,11 +3234,11 @@
   // ══════════════════════════════════════════════════════════════
   async function loadEquipment() {
     if (!alpToken || !platformApi) {
-      $equipStatus.textContent = '연결 없음 — 맨손으로 입장하거나 게임에서 열어 주세요.';
+      $equipStatus.textContent = tr('equip_status_no_conn');
       return;
     }
     try {
-      $equipStatus.textContent = '장비 불러오는 중…';
+      $equipStatus.textContent = tr('loading_equip');
       const [eqRes, modRes] = await Promise.all([
         apiFetch(`${platformApi}/api/craft/equipment?limit=40`, {
           headers: { Authorization:`Bearer ${alpToken}` },
@@ -3121,7 +3269,7 @@
         ? `장비 ${total}개 · 무기와 방어구를 선택하세요`
         : '장비가 없습니다. 대장간에서 만들어 오세요!';
     } catch {
-      $equipStatus.textContent = '장비 불러오기 실패 — 맨손으로 입장합니다.';
+      $equipStatus.textContent = tr('loading_equip_fail');
     }
   }
 
@@ -3188,7 +3336,7 @@
     const $btn = document.getElementById('btn-enter');
     if (!$btn) return;
     const n = Object.values(selectedSlots).filter(Boolean).length;
-    $btn.textContent = n > 0 ? `⚔️ 입장 (${n}개 장착)` : '⚔️ 입장';
+    $btn.textContent = n > 0 ? tr('enter_with', { n: n }) : tr('enter_no');
     $btn.disabled = false;
   }
 
@@ -3241,7 +3389,7 @@
     const filtered = _invFilter === 'all' ? list : list.filter(eq => detectItemSlot(eq) === _invFilter);
 
     if (filtered.length === 0) {
-      $grid.innerHTML = '<p class="inv-empty">해당 슬롯 장비 없음</p>';
+      $grid.innerHTML = '<p class="inv-empty">' + tr('no_slot_gear') + '</p>';
       return;
     }
 
@@ -3273,7 +3421,7 @@
       item.appendChild(thumb);
 
       const name = document.createElement('span');
-      name.className = 'inv-item-name'; name.textContent = eq.name || '장비';
+      name.className = 'inv-item-name'; name.textContent = eq.name || tr('equip_default');
       item.appendChild(name);
 
       const badge = document.createElement('span');
@@ -3337,7 +3485,7 @@
     selectedSlots = {};
 
     if ($equipStatus) {
-      $equipStatus.textContent = list.length ? `${list.length}개` : '없음';
+      $equipStatus.textContent = list.length ? tr('n_count', { n: list.length }) : tr('none_label');
     }
 
     const $grid = document.getElementById('inv-grid');
@@ -3376,7 +3524,7 @@
     });
 
     if (list.length === 0) {
-      $grid.innerHTML = '<p class="inv-empty">보유 장비가 없습니다</p>';
+      $grid.innerHTML = '<p class="inv-empty">' + tr('no_owned_gear') + '</p>';
       refreshSlotUI(); updateEnterBtn(); return;
     }
 
@@ -3681,7 +3829,7 @@
     }
 
     if (body.children.length === 0) {
-      body.innerHTML = '<p style="color:var(--dim);text-align:center;padding:1rem">장착된 장비가 없습니다</p>';
+      body.innerHTML = '<p style="color:var(--dim);text-align:center;padding:1rem">' + tr('no_equipped_gear') + '</p>';
     }
 
     // 푸터: 수리 키트 현황 + 전체 수리
@@ -3695,7 +3843,7 @@
 
     const repAllBtn = document.createElement('button');
     repAllBtn.className = 'ep-repair-all-btn';
-    repAllBtn.textContent = '🔧 전체 수리';
+    repAllBtn.textContent = tr('repair_all_btn');
     repAllBtn.disabled = !hasAnyKit;
     repAllBtn.addEventListener('click', () => {
       _repairAll();
@@ -3728,14 +3876,14 @@
     if (onRepair20) {
       const btn = document.createElement('button');
       btn.className = 'ep-repair-btn';
-      btn.textContent = '🔧 +20';
+      btn.textContent = tr('repair_20_btn');
       btn.addEventListener('click', () => { onRepair20(); renderEquipPanel(); });
       wrap.appendChild(btn);
     }
     if (onRepairFull) {
       const btn = document.createElement('button');
       btn.className = 'ep-repair-btn';
-      btn.textContent = '🔩 완전';
+      btn.textContent = tr('repair_full_btn');
       btn.addEventListener('click', () => { onRepairFull(); renderEquipPanel(); });
       wrap.appendChild(btn);
     }
@@ -3758,7 +3906,7 @@
       _recomputePlayerStats();
     }
     hudDirty = true;
-    toast(`🔧 무기 내구도 +${add} 회복`);
+    toast(tr('weapon_dur_recovered', { n: add }));
   }
 
   function _repairArmor(slotId, amount) {
@@ -3776,7 +3924,7 @@
     const eq = wrapper.equip || wrapper;
     if (wasBroken && wrapper.curDur > 0) _recomputePlayerStats();
     hudDirty = true;
-    toast(`🔧 ${eq.name} 내구도 +${add} 회복`);
+    toast(tr('gear_dur_recovered', { name: eq.name, n: add }));
   }
 
   function _repairAll() {
@@ -3800,7 +3948,7 @@
       else _repairArmor(lowestSlot, 20);
       repaired++;
     }
-    if (repaired > 0) toast(`🔧 전체 수리 완료 (${repaired}회)`);
+    if (repaired > 0) toast(tr('repair_full_n_times', { n: repaired }));
     updateArmorHud();
   }
 
