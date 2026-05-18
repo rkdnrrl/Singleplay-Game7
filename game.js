@@ -23,16 +23,16 @@
     wrapper.style.cssText = `position:fixed;${pos0}width:${state.size.w}px;height:${state.size.h}px;z-index:9999;background:transparent;`;
 
     const resizeHandle = document.createElement('div');
-    resizeHandle.style.cssText = 'position:absolute;top:28%;left:0;width:32px;height:48px;z-index:2;cursor:nwse-resize;display:flex;align-items:center;padding:8px;';
+    resizeHandle.style.cssText = 'position:absolute;top:0;left:0;width:32px;height:32px;z-index:2;cursor:nwse-resize;display:flex;align-items:center;justify-content:center;';
     const resizeInner = document.createElement('div');
-    resizeInner.style.cssText = 'width:14px;height:14px;border-top:2.5px solid rgba(255,255,255,0.5);border-left:2.5px solid rgba(255,255,255,0.5);border-radius:2px 0 0 0;';
+    resizeInner.style.cssText = 'width:14px;height:14px;border-top:3px solid rgba(0,0,0,0.6);border-left:3px solid rgba(0,0,0,0.6);border-radius:2px 0 0 0;filter:drop-shadow(0 0 1px rgba(255,255,255,0.9));';
     resizeHandle.appendChild(resizeInner);
     wrapper.appendChild(resizeHandle);
 
     const dragBar = document.createElement('div');
-    dragBar.style.cssText = 'position:absolute;top:28%;left:32px;right:0;height:48px;z-index:2;cursor:grab;display:flex;align-items:center;justify-content:center;';
+    dragBar.style.cssText = 'position:absolute;top:0;left:32px;right:0;height:28px;z-index:2;cursor:grab;display:flex;align-items:center;justify-content:center;';
     const dragInner = document.createElement('div');
-    dragInner.style.cssText = 'width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,0.35);';
+    dragInner.style.cssText = 'width:48px;height:6px;border-radius:3px;background:rgba(0,0,0,0.55);box-shadow:0 0 0 1px rgba(255,255,255,0.7),0 1px 2px rgba(0,0,0,0.3);';
     dragBar.appendChild(dragInner);
     wrapper.appendChild(dragBar);
 
