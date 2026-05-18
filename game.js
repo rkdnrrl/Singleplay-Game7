@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   'use strict';
 
   /* ── i18n ── */
@@ -56,6 +56,26 @@
       // 일반
       kills_format: '처치: {n}',
       coins_earned: '획득 코인: {n}',
+      // 인게임 토스트
+      need_kill_boss: '⚠️ 수문장을 처치해야 올라갈 수 있다!',
+      need_kill_boss_l: '👑 수문장을 처치해야 위층으로 올라갈 수 있다!',
+      sta_low: '⚡ 스태미나 부족!',
+      item_acquired: '{emoji} {name} 획득!',
+      item_found: '📦 {emoji} {name} 발견!',
+      potion_30: '🧪 HP 30% 회복!', potion_55: '🫙 HP 55% 회복!', potion_full: '✨ HP 완전 회복!',
+      repair_full_stat: '🔧 장비 수리 완료! 능력치 복구', repair_dur: '🔧 내구도 +{n} 회복',
+      repair2_full_stat: '🔩 완전 수리! 능력치 복구', repair2_dur: '🔩 내구도 완전 회복! (+{n})',
+      atk_buff_8: '💠 공격력 +8 (이번 층)', atk_buff_15: '💪 공격력 +15 (이번 층)',
+      shield_1: '📜 다음 피해 무효 준비!', shield_3: '🛡️ 다음 피해 3회 무효!',
+      bomb_hit: '💣 폭발! {n}마리 피격', freeze_hit: '❄️ 빙결! {n}마리 기절',
+      speed_buff: '💨 이동 속도 +25% (이번 층)', curse: '📿 저주! 이번 층 적 피해 -30%',
+      map_reveal: '🗺️ 지도 전체 공개!',
+      rest_floor: '⛺ 휴식층 도착! HP 25% 회복 · 포털로 다음 층 이동',
+      boss_floor_warn: '⚠️ B{n}F — 보스 층! 수문장이 강력합니다',
+      pre_boss_floor: '🏰 B{n}F 도착! 다음 층은 보스 층입니다',
+      mute: '음소거', unmute: '🔇 음소거 해제',
+      no_equipment: '장비',
+      equip_status_no_conn: '연결 없음 — 맨손으로 입장하거나 게임에서 열어 주세요.',
       // 튜토리얼
       t7_t1_title: '던전 탐험에 오신 걸 환영해요!', t7_t1_body: '몬스터를 처치하고 층을 내려가며 보상을 모으세요.<br>죽지 않고 탈출하는 게 핵심이에요!',
       t7_t2_title: '조작법', t7_t2_body: '<b>마우스 클릭</b>: 이동/공격<br><b>스킬 버튼</b>: 액티브 스킬 사용<br>몬스터에 가까이 가면 자동으로 공격해요.',
@@ -104,6 +124,25 @@
       filter_all: 'All', filter_weapon: 'Weapon', filter_head: 'Head', filter_chest: 'Chest', filter_pants: 'Pants', filter_gloves: 'Gloves', filter_boots: 'Boots', filter_accessory: 'Accessory',
       kills_format: 'Kills: {n}',
       coins_earned: 'Coins earned: {n}',
+      need_kill_boss: '⚠️ Defeat the guardian to ascend!',
+      need_kill_boss_l: '👑 You must defeat the guardian to climb up!',
+      sta_low: '⚡ Out of stamina!',
+      item_acquired: '{emoji} {name} obtained!',
+      item_found: '📦 {emoji} {name} found!',
+      potion_30: '🧪 HP +30% restored!', potion_55: '🫙 HP +55% restored!', potion_full: '✨ HP fully restored!',
+      repair_full_stat: '🔧 Gear repaired! Stats restored', repair_dur: '🔧 Durability +{n}',
+      repair2_full_stat: '🔩 Full repair! Stats restored', repair2_dur: '🔩 Durability fully restored! (+{n})',
+      atk_buff_8: '💠 ATK +8 (this floor)', atk_buff_15: '💪 ATK +15 (this floor)',
+      shield_1: '📜 Next hit nullified!', shield_3: '🛡️ Next 3 hits nullified!',
+      bomb_hit: '💣 Boom! {n} hit', freeze_hit: '❄️ Freeze! {n} stunned',
+      speed_buff: '💨 Speed +25% (this floor)', curse: '📿 Curse! Enemy DMG -30% this floor',
+      map_reveal: '🗺️ Full map revealed!',
+      rest_floor: '⛺ Rest floor! HP +25% · portal to next floor',
+      boss_floor_warn: '⚠️ B{n}F — Boss floor! Guardian is strong',
+      pre_boss_floor: '🏰 B{n}F reached! Next floor is a boss floor',
+      mute: 'Mute', unmute: '🔇 Unmute',
+      no_equipment: 'Gear',
+      equip_status_no_conn: 'No connection — enter bare-handed or open from game.',
       t7_t1_title: 'Welcome to Dungeon Exploration!', t7_t1_body: 'Slay monsters, descend floors, collect rewards.<br>Survive and escape!',
       t7_t2_title: 'Controls', t7_t2_body: '<b>Mouse click</b>: Move/attack<br><b>Skill buttons</b>: Use active skills<br>You auto-attack monsters when in range.',
       t7_t3_title: 'Equip Gear', t7_t3_body: 'Before entering, equip <b>gear</b>(weapon/head/chest/pants/hands/feet/accessory)<br>crafted at the Blacksmith.<br>You can enter naked, but you\'ll be fragile.',
@@ -151,6 +190,25 @@
       filter_all: 'すべて', filter_weapon: '武器', filter_head: '頭', filter_chest: '胴', filter_pants: 'ズボン', filter_gloves: '手袋', filter_boots: '靴', filter_accessory: 'アクセ',
       kills_format: '討伐: {n}',
       coins_earned: '獲得コイン: {n}',
+      need_kill_boss: '⚠️ 守護者を倒さないと進めない!',
+      need_kill_boss_l: '👑 守護者を倒さないと上の階に進めない!',
+      sta_low: '⚡ スタミナ不足!',
+      item_acquired: '{emoji} {name} 入手!',
+      item_found: '📦 {emoji} {name} 発見!',
+      potion_30: '🧪 HP 30% 回復!', potion_55: '🫙 HP 55% 回復!', potion_full: '✨ HP 完全回復!',
+      repair_full_stat: '🔧 装備修理完了! 能力値復元', repair_dur: '🔧 耐久度 +{n} 回復',
+      repair2_full_stat: '🔩 完全修理! 能力値復元', repair2_dur: '🔩 耐久度完全回復! (+{n})',
+      atk_buff_8: '💠 攻撃力 +8 (この階)', atk_buff_15: '💪 攻撃力 +15 (この階)',
+      shield_1: '📜 次のダメージ無効!', shield_3: '🛡️ 次の3回ダメージ無効!',
+      bomb_hit: '💣 爆発! {n}体ヒット', freeze_hit: '❄️ 凍結! {n}体気絶',
+      speed_buff: '💨 移動速度 +25% (この階)', curse: '📿 呪い! この階の敵ダメージ -30%',
+      map_reveal: '🗺️ マップ全公開!',
+      rest_floor: '⛺ 休憩階に到着! HP 25% 回復 · ポータルで次の階へ',
+      boss_floor_warn: '⚠️ B{n}F — ボス階! 守護者は強力です',
+      pre_boss_floor: '🏰 B{n}F 到着! 次はボス階です',
+      mute: 'ミュート', unmute: '🔇 ミュート解除',
+      no_equipment: '装備',
+      equip_status_no_conn: '接続なし — 素手で入場するか、ゲームから開いてください。',
       t7_t1_title: 'ダンジョン探索へようこそ!', t7_t1_body: 'モンスターを倒し、階層を下りて報酬を集めましょう。<br>死なずに脱出するのがカギ!',
       t7_t2_title: '操作方法', t7_t2_body: '<b>マウスクリック</b>: 移動/攻撃<br><b>スキルボタン</b>: アクティブスキル<br>モンスターに近づくと自動で攻撃します。',
       t7_t3_title: '装備の装着', t7_t3_body: '入場前に<b>装備スロット</b>(武器/頭/胴/ズボン/手/足/アクセサリ)に<br>鍛冶屋で作った装備を装着しましょう。<br>素手でも入れますが弱いです。',
@@ -198,6 +256,25 @@
       filter_all: '全部', filter_weapon: '武器', filter_head: '头部', filter_chest: '胸甲', filter_pants: '裤子', filter_gloves: '手套', filter_boots: '鞋子', filter_accessory: '饰品',
       kills_format: '击杀: {n}',
       coins_earned: '获得金币: {n}',
+      need_kill_boss: '⚠️ 必须击败守门者才能进入!',
+      need_kill_boss_l: '👑 必须击败守门者才能上一层!',
+      sta_low: '⚡ 体力不足!',
+      item_acquired: '{emoji} {name} 获得!',
+      item_found: '📦 {emoji} {name} 发现!',
+      potion_30: '🧪 HP 30% 恢复!', potion_55: '🫙 HP 55% 恢复!', potion_full: '✨ HP 完全恢复!',
+      repair_full_stat: '🔧 装备修理完成! 能力值恢复', repair_dur: '🔧 耐久度 +{n} 恢复',
+      repair2_full_stat: '🔩 完全修理! 能力值恢复', repair2_dur: '🔩 耐久度完全恢复! (+{n})',
+      atk_buff_8: '💠 攻击力 +8 (本层)', atk_buff_15: '💪 攻击力 +15 (本层)',
+      shield_1: '📜 下次伤害无效!', shield_3: '🛡️ 下3次伤害无效!',
+      bomb_hit: '💣 爆炸! {n}只命中', freeze_hit: '❄️ 冰冻! {n}只眩晕',
+      speed_buff: '💨 移动速度 +25% (本层)', curse: '📿 诅咒! 本层敌人伤害 -30%',
+      map_reveal: '🗺️ 地图全部公开!',
+      rest_floor: '⛺ 休息层! HP 25% 恢复 · 传送门前往下层',
+      boss_floor_warn: '⚠️ B{n}F — Boss层! 守门者很强',
+      pre_boss_floor: '🏰 B{n}F 到达! 下一层是Boss层',
+      mute: '静音', unmute: '🔇 取消静音',
+      no_equipment: '装备',
+      equip_status_no_conn: '无连接 — 赤手入场或从游戏内打开。',
       t7_t1_title: '欢迎来到地下城探险!', t7_t1_body: '击败怪物,下到更深层,收集奖励。<br>不死并逃脱是关键!',
       t7_t2_title: '操作方法', t7_t2_body: '<b>鼠标点击</b>: 移动/攻击<br><b>技能按钮</b>: 使用主动技能<br>靠近怪物时会自动攻击。',
       t7_t3_title: '装备装着', t7_t3_body: '进入前装备<b>装备槽</b>(武器/头/胸/裤/手/脚/饰品)<br>在铁匠铺制作的装备。<br>赤手也能进但很脆弱。',
@@ -207,20 +284,20 @@
       t7_t7_title: '挑战!', t7_t7_body: '越深怪物越强,奖励也越大。<br>装备 → 地下城 → 金币 → 更好装备的循环!',
     },
   };
-  function t(key, params) {
+  function tr(key, params) {
     const dict = _I18N[_LANG] || _I18N.ko;
     let s = dict[key] || _I18N.ko[key] || key;
     if (params) for (const k in params) s = s.split('{' + k + '}').join(String(params[k]));
     return s;
   }
   function applyHtmlI18n() {
-    try { document.documentElement.lang = _LANG; document.title = t('page_title'); } catch {}
+    try { document.documentElement.lang = _LANG; document.title = tr('page_title'); } catch {}
     const setText = (sel, key) => { const el = document.querySelector(sel); if (el) el.textContent = t(key); };
     setText('.select-title', 'select_title');
     // 보유 장비 헤더 (안에 span이 있어서 첫 번째 텍스트노드만 교체)
     const invHdr = document.querySelector('.inv-panel-hdr');
     if (invHdr && invHdr.firstChild && invHdr.firstChild.nodeType === Node.TEXT_NODE) {
-      invHdr.firstChild.nodeValue = t('owned_equipment') + ' ';
+      invHdr.firstChild.nodeValue = tr('owned_equipment') + ' ';
     }
     setText('.inv-hint', 'drag_hint');
     // 슬롯 라벨
@@ -236,38 +313,38 @@
     // 스킬 패널 헤더 (안에 span 있음)
     const skHdr = document.querySelector('.skill-panel-hdr');
     if (skHdr && skHdr.firstChild && skHdr.firstChild.nodeType === Node.TEXT_NODE) {
-      skHdr.firstChild.nodeValue = t('passive_skills') + ' ';
+      skHdr.firstChild.nodeValue = tr('passive_skills') + ' ';
     }
     setText('#btn-enter', 'btn_enter');
     // HUD
     document.querySelectorAll('.hud-stat .hud-lbl').forEach(el => {
-      if (el.textContent === 'HP') el.textContent = t('hud_hp');
-      else if (el.textContent === '내구') el.textContent = t('hud_durability');
+      if (el.textContent === 'HP') el.textContent = tr('hud_hp');
+      else if (el.textContent === '내구') el.textContent = tr('hud_durability');
     });
     const staLbl = document.querySelector('.hud-sta-row .hud-lbl');
-    if (staLbl) staLbl.textContent = t('hud_stamina');
+    if (staLbl) staLbl.textContent = tr('hud_stamina');
     const eqHud = document.getElementById('equip-name-hud');
-    if (eqHud && eqHud.textContent === '맨손') eqHud.textContent = t('bare_hands');
+    if (eqHud && eqHud.textContent === '맨손') eqHud.textContent = tr('bare_hands');
     const arHud = document.getElementById('armor-name-hud');
-    if (arHud && arHud.textContent === '방어구 없음') arHud.textContent = t('no_armor');
+    if (arHud && arHud.textContent === '방어구 없음') arHud.textContent = tr('no_armor');
     // 반응 프롬프트
     setText('.rp-dodge', 'rp_dodge');
     setText('#rp-counter', 'rp_counter');
     // 장비 패널 헤더 (안에 button 있음)
     const eqPanelHdr = document.querySelector('.equip-panel-hdr');
     if (eqPanelHdr && eqPanelHdr.firstChild && eqPanelHdr.firstChild.nodeType === Node.TEXT_NODE) {
-      eqPanelHdr.firstChild.nodeValue = t('equipment_status') + ' ';
+      eqPanelHdr.firstChild.nodeValue = tr('equipment_status') + ' ';
     }
     // 사망 화면
     document.querySelectorAll('.dead-title').forEach(el => {
-      if (el.textContent === '전투 불능') el.textContent = t('dead_title');
-      else if (el.textContent === '탈출 성공!') el.textContent = t('escaped_title');
+      if (el.textContent === '전투 불능') el.textContent = tr('dead_title');
+      else if (el.textContent === '탈출 성공!') el.textContent = tr('escaped_title');
     });
     setText('#btn-restart', 'restart_btn');
     setText('#btn-escaped-back', 'escaped_back');
     // 장비 패널 버튼 title
     const btnEqPanel = document.getElementById('btn-equip-panel');
-    if (btnEqPanel) btnEqPanel.title = t('equipment_status_title');
+    if (btnEqPanel) btnEqPanel.title = tr('equipment_status_title');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyHtmlI18n);
   else applyHtmlI18n();
@@ -418,7 +495,7 @@
     const helpBtn = document.createElement('button');
     helpBtn.id = '_tutorial-help-btn';
     helpBtn.textContent = '?';
-    helpBtn.title = t('tutorial_help');
+    helpBtn.title = tr('tutorial_help');
     helpBtn.style.cssText = `position:fixed;top:${helpButtonPos.top}px;left:${helpButtonPos.left}px;width:36px;height:36px;border-radius:50%;background:rgba(30,30,40,0.85);color:#fff;border:1.5px solid rgba(255,255,255,0.4);font-size:18px;font-weight:bold;cursor:pointer;z-index:9998;box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:transform 0.15s;`;
     helpBtn.addEventListener('mouseenter', () => helpBtn.style.transform = 'scale(1.1)');
     helpBtn.addEventListener('mouseleave', () => helpBtn.style.transform = 'scale(1)');
@@ -458,12 +535,12 @@
       card.appendChild(nav);
 
       const prevBtn = document.createElement('button');
-      prevBtn.textContent = t('t_prev');
+      prevBtn.textContent = tr('t_prev');
       prevBtn.style.cssText = 'flex:1;padding:10px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;font-size:14px;';
       nav.appendChild(prevBtn);
 
       const skipBtn = document.createElement('button');
-      skipBtn.textContent = t('t_skip');
+      skipBtn.textContent = tr('t_skip');
       skipBtn.style.cssText = 'flex:1;padding:10px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:8px;cursor:pointer;font-size:14px;';
       nav.appendChild(skipBtn);
 
@@ -473,7 +550,7 @@
 
       const dontShow = document.createElement('label');
       dontShow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer;justify-content:center;';
-      dontShow.innerHTML = '<input type="checkbox" id="_tutorial-dontshow" style="cursor:pointer;"> ' + t('t_dont_show');
+      dontShow.innerHTML = '<input type="checkbox" id="_tutorial-dontshow" style="cursor:pointer;"> ' + tr('t_dont_show');
       card.appendChild(dontShow);
 
       function render() {
@@ -482,7 +559,7 @@
         title.textContent = s.title || '';
         body.innerHTML = s.body || '';
         prevBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
-        nextBtn.textContent = idx === steps.length - 1 ? t('t_start') : t('t_next');
+        nextBtn.textContent = idx === steps.length - 1 ? tr('t_start') : tr('t_next');
         dots.innerHTML = '';
         steps.forEach((_, i) => {
           const d = document.createElement('div');
@@ -767,7 +844,7 @@
   if (platformWeb) {
     const btn = document.createElement('a');
     btn.href = platformWeb + '/games';
-    btn.textContent = t('back_to_games');
+    btn.textContent = tr('back_to_games');
     btn.style.cssText = [
       'position:fixed;top:12px;left:12px;z-index:9999',
       'background:rgba(255,255,255,0.07);color:#aaa',
@@ -1267,7 +1344,7 @@
     if (tile === T.STAIRS) {
       const guardian = dungeon.enemies.find(e => e.isGuardian && !e.dead);
       if (guardian) {
-        toast('⚠️ 수문장을 처치해야 올라갈 수 있다!');
+        toast(tr('need_kill_boss'));
         spawnFx(player.px+TS/2, player.py-14, '수문장 처치 필요!', '#ff9800', 1400);
         return;
       }
@@ -1279,7 +1356,7 @@
 
   function bumpAttack(enemy) {
     if (player.stamina < STA_ATK_COST) {
-      toast('⚡ 스태미나 부족!');
+      toast(tr('sta_low'));
       spawnFx(player.px + TS/2, player.py - 10, '스태미나 부족', '#9e9e9e', 700);
       SFX.stamina();
       return;
@@ -1337,7 +1414,7 @@
 
   function pickupItem(item) {
     player.inventory.push({ type:item.type, def:item.def });
-    toast(`${item.def.emoji} ${item.def.name} 획득!`);
+    toast(tr('item_acquired', { emoji: item.def.emoji, name: item.def.name }));
     SFX.pickup();
     hudDirty = true;
   }
@@ -1348,7 +1425,7 @@
                         'potion_big', 'repair_full', 'speed', 'freeze', 'bomb', 'power_big'];
     const t = CHEST_POOL[Math.floor(Math.random() * CHEST_POOL.length)];
     player.inventory.push({ type:t, def:IDEF[t] });
-    toast(`📦 ${IDEF[t].emoji} ${IDEF[t].name} 발견!`);
+    toast(tr('item_found', { emoji: IDEF[t].emoji, name: IDEF[t].name }));
     hudDirty = true;
   }
 
@@ -1371,21 +1448,21 @@
         const h = Math.round(player.maxHp * 0.30);
         player.hp = Math.min(player.maxHp, player.hp + h);
         spawnFx(player.px+TS/2, player.py, `+${h} HP`, '#4caf50');
-        toast('🧪 HP 30% 회복!');
+        toast(tr('potion_30'));
         break;
       }
       case 'heal_big': {
         const h = Math.round(player.maxHp * 0.55);
         player.hp = Math.min(player.maxHp, player.hp + h);
         spawnFx(player.px+TS/2, player.py, `+${h} HP`, '#4caf50');
-        toast('🫙 HP 55% 회복!');
+        toast(tr('potion_55'));
         break;
       }
       case 'heal_full': {
         const h = player.maxHp - player.hp;
         player.hp = player.maxHp;
         spawnFx(player.px+TS/2, player.py, `+${h} HP`, '#4caf50');
-        toast('✨ HP 완전 회복!');
+        toast(tr('potion_full'));
         break;
       }
       case 'repair': {
@@ -1400,9 +1477,9 @@
           const a = calcArmorTotals();
           player.baseAtk = 5 + a.atk + (ws.attackBonus  || 0);
           player.baseDef = a.def +      (ws.defenseBonus || 0);
-          toast('🔧 장비 수리 완료! 능력치 복구');
+          toast(tr('repair_full_stat'));
         } else {
-          toast(`🔧 내구도 +${Math.max(0,rep)} 회복`);
+          toast(tr('repair_dur', { n: Math.max(0, rep) }));
         }
         spawnFx(player.px+TS/2, player.py, `수리 +${Math.max(0,rep)}`, '#2196f3');
         break;
@@ -1418,34 +1495,34 @@
           const a2 = calcArmorTotals();
           player.baseAtk = 5 + a2.atk + (ws2.attackBonus  || 0);
           player.baseDef = a2.def +      (ws2.defenseBonus || 0);
-          toast('🔩 완전 수리! 능력치 복구');
+          toast(tr('repair2_full_stat'));
         } else {
-          toast(`🔩 내구도 완전 회복! (+${Math.max(0, rep2)})`);
+          toast(tr('repair2_dur', { n: Math.max(0, rep2) }));
         }
         spawnFx(player.px+TS/2, player.py, '완전 수리!', '#2196f3');
         break;
       }
       case 'power': {
         player.powerBonus += 8;
-        toast('💠 공격력 +8 (이번 층)');
+        toast(tr('atk_buff_8'));
         spawnFx(player.px+TS/2, player.py, '공격력 +8!', '#7c4dff');
         break;
       }
       case 'power_big': {
         player.powerBonus += 15;
-        toast('💪 공격력 +15 (이번 층)');
+        toast(tr('atk_buff_15'));
         spawnFx(player.px+TS/2, player.py, '공격력 +15!', '#7c4dff');
         break;
       }
       case 'shield': {
         player.shieldStacks = Math.max(player.shieldStacks, 1);
-        toast('📜 다음 피해 무효 준비!');
+        toast(tr('shield_1'));
         spawnFx(player.px+TS/2, player.py, '방어막!', '#2196f3');
         break;
       }
       case 'shield_big': {
         player.shieldStacks = Math.max(player.shieldStacks, 3);
-        toast('🛡️ 다음 피해 3회 무효!');
+        toast(tr('shield_3'));
         spawnFx(player.px+TS/2, player.py, '철벽 방어!', '#2196f3');
         break;
       }
@@ -1462,7 +1539,7 @@
             bombed++;
           }
         }
-        toast(`💣 폭발! ${bombed}마리 피격`);
+        toast(tr('bomb_hit', { n: bombed }));
         SFX.counter();
         break;
       }
@@ -1476,18 +1553,18 @@
           spawnFx(e.px+TS/2, e.py, '❄️', '#90caf9', 1200);
           frozen++;
         }
-        toast(`❄️ 빙결! ${frozen}마리 기절`);
+        toast(tr('freeze_hit', { n: frozen }));
         break;
       }
       case 'speed': {
         player.speedBonus = Math.min(0.5, player.speedBonus + 0.25);
-        toast('💨 이동 속도 +25% (이번 층)');
+        toast(tr('speed_buff'));
         spawnFx(player.px+TS/2, player.py, '질풍!', '#80cbc4');
         break;
       }
       case 'curse': {
         player.curseActive = true;
-        toast('📿 저주! 이번 층 적 피해 -30%');
+        toast(tr('curse'));
         spawnFx(player.px+TS/2, player.py, '저주 발동!', '#ce93d8');
         break;
       }
@@ -1495,7 +1572,7 @@
         for (let ry = 0; ry < DH; ry++)
           for (let rx = 0; rx < DW; rx++)
             dungeon.revealed[ry][rx] = 1;
-        toast('🗺️ 지도 전체 공개!');
+        toast(tr('map_reveal'));
         spawnFx(player.px+TS/2, player.py, '지도 공개!', '#fff176');
         break;
       }
@@ -1513,7 +1590,7 @@
     const now = performance.now();
 
     if (player.stamina < STA_CTR_COST) {
-      toast('⚡ 스태미나 부족!');
+      toast(tr('sta_low'));
       spawnFx(player.px+TS/2, player.py-10, '스태미나 부족', '#9e9e9e', 700);
       return;
     }
@@ -1678,7 +1755,7 @@
         if (stairsTile) {
           const dist = Math.abs(player.gx - stairsTile.gx) + Math.abs(player.gy - stairsTile.gy);
           if (dist <= 4) {
-            toast(`👑 수문장을 처치해야 위층으로 올라갈 수 있다!`);
+            toast(tr('need_kill_boss_l'));
             _guardianHinted = true;
           }
         }
@@ -1854,7 +1931,7 @@
     isRestFloor = true;
     dungeon = generateRestFloor();
     camX = camTX = 0; camY = camTY = 0; updateCamera(); camX = camTX; camY = camTY;
-    toast(`⛺ 휴식층 도착! HP 25% 회복 · 포털로 다음 층 이동`);
+    toast(tr('rest_floor'));
     SFX.rest();
     hudDirty = true;
     syncDurabilityToServer(); // 휴식층 진입 시 내구도 DB 동기화
@@ -1901,9 +1978,9 @@
     updateCamera();
 
     if (floor % 5 === 0) {
-      toast(`⚠️ B${floor}F — 보스 층! 수문장이 강력합니다`);
+      toast(tr('boss_floor_warn', { n: floor }));
     } else if (floor % 5 === 4) {
-      toast(`🏰 B${floor}F 도착! 다음 층은 보스 층입니다`);
+      toast(tr('pre_boss_floor', { n: floor }));
     } else {
       toast(`🏰 B${floor}F 도착!`);
     }
@@ -2043,7 +2120,7 @@
     if (wrapper.curDur === 0) {
       const eq = wrapper.equip || wrapper;
       spawnFx(player.px+TS/2, player.py-10, `${label} 파괴!`, '#ff5722', 1200);
-      toast(t('toast_equip_broken', { name: eq.name }));
+      toast(tr('toast_equip_broken', { name: eq.name }));
       deleteEquipFromServer(eq.id);
       delete player.equippedSlots[slotId];
       const a = calcArmorTotals();
@@ -2131,7 +2208,7 @@
     if (!activeEq) return;
     const eq = activeEq.equip;
     spawnFx(player.px+TS/2, player.py-10, '무기 파괴!', '#ff5722', 1200);
-    toast(t('toast_equip_broken', { name: eq.name }));
+    toast(tr('toast_equip_broken', { name: eq.name }));
     deleteEquipFromServer(eq.id);
     const idx = player.inventory.indexOf(activeEq);
     if (idx !== -1) player.inventory.splice(idx, 1);
@@ -3746,13 +3823,13 @@
     mountTutorial({
       storageKey: 'game7_tutorial',
       steps: [
-        { emoji: '⚔️', title: t('t7_t1_title'), body: t('t7_t1_body') },
-        { emoji: '🎮', title: t('t7_t2_title'), body: t('t7_t2_body') },
-        { emoji: '🛡️', title: t('t7_t3_title'), body: t('t7_t3_body') },
-        { emoji: '⚠️', title: t('t7_t4_title'), body: t('t7_t4_body') },
-        { emoji: '💀', title: t('t7_t5_title'), body: t('t7_t5_body') },
-        { emoji: '⭐', title: t('t7_t6_title'), body: t('t7_t6_body') },
-        { emoji: '🏆', title: t('t7_t7_title'), body: t('t7_t7_body') },
+        { emoji: '⚔️', title: tr('t7_t1_title'), body: tr('t7_t1_body') },
+        { emoji: '🎮', title: tr('t7_t2_title'), body: tr('t7_t2_body') },
+        { emoji: '🛡️', title: tr('t7_t3_title'), body: tr('t7_t3_body') },
+        { emoji: '⚠️', title: tr('t7_t4_title'), body: tr('t7_t4_body') },
+        { emoji: '💀', title: tr('t7_t5_title'), body: tr('t7_t5_body') },
+        { emoji: '⭐', title: tr('t7_t6_title'), body: tr('t7_t6_body') },
+        { emoji: '🏆', title: tr('t7_t7_title'), body: tr('t7_t7_body') },
       ],
     });
   });
