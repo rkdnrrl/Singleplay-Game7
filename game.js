@@ -1,6 +1,134 @@
 (function () {
   'use strict';
 
+  /* ── 캐릭터 위젯 — React 컴포넌트와 동일 기능 (드래그 바, 리사이즈 핸들, localStorage 저장) ── */
+  function mountCharacterWidget(userId, { app = 'platform', bottomOffset = 0, storageKey = 'charwidget' } = {}) {
+    if (document.getElementById('assistant-widget')) return;
+    const IFRAME_SRC = 'https://assistant-chi-two.vercel.app';
+    const NATURAL_W = 220, NATURAL_H = 390, ASPECT = NATURAL_H / NATURAL_W;
+    const DESKTOP_W = 220, MOBILE_W = 140, MIN_W = 80, MAX_W = 360;
+    const isMobile = () => window.innerWidth < 640;
+    const load = (k, f) => { try { const v = JSON.parse(localStorage.getItem(k)); if (v != null) return v; } catch (e) {} return f; };
+    const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+    const defaultSize = { w: isMobile() ? MOBILE_W : DESKTOP_W, h: Math.round((isMobile() ? MOBILE_W : DESKTOP_W) * ASPECT) };
+    const state = {
+      pos:  load(storageKey + '_pos',  { x: -1, y: -1 }),
+      size: load(storageKey + '_size', defaultSize),
+      blocked: false,
+    };
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'assistant-widget';
+    const pos0 = state.pos.x >= 0 ? `left:${state.pos.x}px;top:${state.pos.y}px;` : `right:0;bottom:${bottomOffset}px;`;
+    wrapper.style.cssText = `position:fixed;${pos0}width:${state.size.w}px;height:${state.size.h}px;z-index:9999;background:transparent;`;
+
+    const resizeHandle = document.createElement('div');
+    resizeHandle.style.cssText = 'position:absolute;top:28%;left:0;width:32px;height:48px;z-index:2;cursor:nwse-resize;display:flex;align-items:center;padding:8px;';
+    const resizeInner = document.createElement('div');
+    resizeInner.style.cssText = 'width:14px;height:14px;border-top:2.5px solid rgba(255,255,255,0.5);border-left:2.5px solid rgba(255,255,255,0.5);border-radius:2px 0 0 0;';
+    resizeHandle.appendChild(resizeInner);
+    wrapper.appendChild(resizeHandle);
+
+    const dragBar = document.createElement('div');
+    dragBar.style.cssText = 'position:absolute;top:28%;left:32px;right:0;height:48px;z-index:2;cursor:grab;display:flex;align-items:center;justify-content:center;';
+    const dragInner = document.createElement('div');
+    dragInner.style.cssText = 'width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,0.35);';
+    dragBar.appendChild(dragInner);
+    wrapper.appendChild(dragBar);
+
+    const blocker = document.createElement('div');
+    blocker.style.cssText = 'position:absolute;inset:0;z-index:1;display:none;';
+    wrapper.appendChild(blocker);
+
+    const iframe = document.createElement('iframe');
+    iframe.src = `${IFRAME_SRC}?userId=${encodeURIComponent(userId)}&app=${encodeURIComponent(app)}`;
+    iframe.setAttribute('allow', 'autoplay');
+    function applyIframeStyle() {
+      const scale = state.size.w / NATURAL_W;
+      iframe.style.cssText = `width:${NATURAL_W}px;height:${NATURAL_H}px;border:none;background:transparent;pointer-events:${state.blocked ? 'none' : 'auto'};transform:scale(${scale});transform-origin:bottom right;position:absolute;bottom:0;right:0;will-change:transform;`;
+    }
+    applyIframeStyle();
+    wrapper.appendChild(iframe);
+    document.body.appendChild(wrapper);
+
+    function setBlocked(b) { state.blocked = b; blocker.style.display = b ? 'block' : 'none'; applyIframeStyle(); }
+    function switchToLeftTop() {
+      if (state.pos.x >= 0) return;
+      const r = wrapper.getBoundingClientRect();
+      state.pos = { x: r.left, y: r.top };
+      wrapper.style.right = ''; wrapper.style.bottom = '';
+      wrapper.style.left = r.left + 'px'; wrapper.style.top = r.top + 'px';
+    }
+    function startDrag(e) {
+      e.preventDefault(); e.stopPropagation();
+      switchToLeftTop();
+      const sMx = e.touches ? e.touches[0].clientX : e.clientX;
+      const sMy = e.touches ? e.touches[0].clientY : e.clientY;
+      const sX = state.pos.x, sY = state.pos.y;
+      setBlocked(true);
+      function onMove(ev) {
+        if (ev.cancelable) ev.preventDefault();
+        const t = ev.touches ? ev.touches[0] : ev;
+        const nx = Math.max(0, Math.min(window.innerWidth  - state.size.w, sX + t.clientX - sMx));
+        const ny = Math.max(0, Math.min(window.innerHeight - state.size.h, sY + t.clientY - sMy));
+        state.pos = { x: nx, y: ny };
+        wrapper.style.left = nx + 'px'; wrapper.style.top = ny + 'px';
+      }
+      function onUp() {
+        setBlocked(false); save(storageKey + '_pos', state.pos);
+        document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onUp);
+      }
+      document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+      document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('touchend', onUp);
+    }
+    function startResize(e) {
+      e.preventDefault(); e.stopPropagation();
+      const sMx = e.touches ? e.touches[0].clientX : e.clientX;
+      const sMy = e.touches ? e.touches[0].clientY : e.clientY;
+      const sW = state.size.w;
+      setBlocked(true);
+      function onMove(ev) {
+        if (ev.cancelable) ev.preventDefault();
+        const t = ev.touches ? ev.touches[0] : ev;
+        const delta = ((sMx - t.clientX) + (sMy - t.clientY)) / 2;
+        const nw = Math.max(MIN_W, Math.min(MAX_W, sW + delta));
+        state.size = { w: Math.round(nw), h: Math.round(nw * ASPECT) };
+        wrapper.style.width = state.size.w + 'px';
+        wrapper.style.height = state.size.h + 'px';
+        applyIframeStyle();
+      }
+      function onUp() {
+        setBlocked(false); save(storageKey + '_size', state.size);
+        document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onUp);
+      }
+      document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+      document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('touchend', onUp);
+    }
+    dragBar.addEventListener('mousedown', startDrag);
+    dragBar.addEventListener('touchstart', startDrag, { passive: false });
+    resizeHandle.addEventListener('mousedown', startResize);
+    resizeHandle.addEventListener('touchstart', startResize, { passive: false });
+
+    document.addEventListener('mousemove', (e) => {
+      const p = state.pos, s = state.size;
+      const elX = p.x >= 0 ? p.x : window.innerWidth  - s.w;
+      const elY = p.y >= 0 ? p.y : window.innerHeight - s.h - bottomOffset;
+      const scale = s.w / NATURAL_W;
+      iframe.contentWindow && iframe.contentWindow.postMessage({
+        type: 'assistant:mousemove',
+        x: (e.clientX - elX) / scale,
+        y: (e.clientY - elY) / scale,
+      }, '*');
+    });
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'assistant:navigate' && typeof e.data.url === 'string') {
+        window.open(e.data.url, '_blank');
+      }
+    });
+  }
+
   // ── 사운드 시스템 (Web Audio API 절차적 생성) ──────────────────
   const _ac = (() => { try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } })();
   let _soundEnabled = true;
@@ -232,49 +360,9 @@
     }).then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.user?.nickname) _playerNickname = d.user.nickname;
-        // 캐릭터 iframe 삽입 (commonUserId 우선 — CommonDB 기준 ID)
+        // 캐릭터 위젯 삽입 (commonUserId 우선 — CommonDB 기준 ID)
         const cuid = d?.user?.commonUserId || d?.user?.id;
-        if (cuid && !document.getElementById('assistant-iframe')) {
-          const iframe = document.createElement('iframe');
-          iframe.id = 'assistant-iframe';
-          iframe.src = `https://assistant-chi-two.vercel.app?userId=${cuid}&app=platform`;
-          const _mob = window.innerWidth < 480;
-          let iframeW = _mob ? 120 : 220, iframeH = _mob ? 213 : 390;
-          let iframeX = -1, iframeY = -1;
-          iframe.style.cssText = `position:fixed;right:0;bottom:0;width:${iframeW}px;height:${iframeH}px;border:none;background:transparent;z-index:9999;`;
-          document.body.appendChild(iframe);
-          function switchToLeftTop() {
-            if (iframeX >= 0) return;
-            const rect = iframe.getBoundingClientRect();
-            iframeX = rect.left; iframeY = rect.top;
-            iframe.style.right = ''; iframe.style.bottom = '';
-            iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
-          }
-          document.addEventListener('mousemove', (e) => {
-            iframe.contentWindow?.postMessage({ type: 'assistant:mousemove', x: e.clientX - iframeX, y: e.clientY - iframeY }, '*');
-          });
-          let pendingDx = 0, pendingDy = 0, rafPending = false;
-          function flushDrag() {
-            rafPending = false;
-            if (pendingDx === 0 && pendingDy === 0) return;
-            iframeX = Math.max(0, Math.min(window.innerWidth  - iframeW, iframeX + pendingDx));
-            iframeY = Math.max(0, Math.min(window.innerHeight - iframeH, iframeY + pendingDy));
-            iframe.style.left = iframeX + 'px'; iframe.style.top = iframeY + 'px';
-            pendingDx = 0; pendingDy = 0;
-          }
-          window.addEventListener('message', (e) => {
-            if (e.data?.type === 'assistant:navigate') { window.open(e.data.url, '_blank'); }
-            if (e.data?.type === 'assistant:drag') {
-              switchToLeftTop();
-              pendingDx += e.data.dx ?? 0; pendingDy += e.data.dy ?? 0;
-              if (!rafPending) { rafPending = true; requestAnimationFrame(flushDrag); }
-            }
-            if (e.data?.type === 'assistant:resize') {
-              iframeW = e.data.width; iframeH = e.data.height;
-              iframe.style.width = iframeW + 'px'; iframe.style.height = iframeH + 'px';
-            }
-          });
-        }
+        if (cuid) mountCharacterWidget(cuid, { app: 'platform', storageKey: 'alp_charwidget' });
       })
       .catch(() => {});
 
